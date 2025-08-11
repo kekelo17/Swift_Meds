@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import GoogleMap from '../component/googlemap.jsx';
 import './CSS/dashboard.css';
 import { 
   Search, 
@@ -27,16 +28,26 @@ import {
   BarChart3,
   Map
 } from 'lucide-react';
+import { PharmacyDatabaseService } from '../back-end/supabase/pharmacy_database_service.js';
+import { PharmacyAuthService, usePharmacyAuth } from '../back-end/supabase/pharmacy_auth_service.js';
 
 const PharmacyDashboard = () => {
   const [activeSection, setActiveSection] = useState('Dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   const [reservations, setReservations] = useState([]);
   const [pharmacies, setPharmacies] = useState([]);
+  const [medications, setMedications] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showQuickStats, setShowQuickStats] = useState(false);
   const [mapView, setMapView] = useState('list'); // 'list' or 'map'
+  const [stats, setStats] = useState({
+    total: 0,
+    confirmed: 0,
+    pending: 0,
+    cancelled: 0,
+    today: 0
+  });
   const mapContainer = useRef(null);
   const map = useRef(null);
   const [formData, setFormData] = useState({
@@ -47,86 +58,95 @@ const PharmacyDashboard = () => {
     status: 'pending'
   });
 
-  // Simulate API data
-  useEffect(() => {
-    setReservations([
-      { 
-        id: 1, 
-        patientName: 'John Doe', 
-        medication: 'Aspirin 100mg', 
-        quantity: 30, 
-        pharmacy: 'City Pharmacy', 
-        status: 'confirmed',
-        date: '2025-08-04',
-        time: '14:30',
-        coordinates: [-74.0060, 40.7128]
-      },
-      { 
-        id: 2, 
-        patientName: 'Jane Smith', 
-        medication: 'Ibuprofen 200mg', 
-        quantity: 20, 
-        pharmacy: 'HealthCare Plus', 
-        status: 'pending',
-        date: '2025-08-04',
-        time: '16:00',
-        coordinates: [-73.9855, 40.7580]
-      },
-      { 
-        id: 3, 
-        patientName: 'Mike Johnson', 
-        medication: 'Paracetamol 500mg', 
-        quantity: 50, 
-        pharmacy: 'MediCenter', 
-        status: 'cancelled',
-        date: '2025-08-03',
-        time: '10:15',
-        coordinates: [-73.9712, 40.7831]
-      },
-    ]);
+  // Use auth hook
+  const { user, profile, loading, signOut } = usePharmacyAuth();
 
-    setPharmacies([
-      { 
-        id: 1, 
-        name: 'City Pharmacy', 
-        address: '123 Main St, Downtown', 
-        phone: '+1-555-0123', 
-        status: 'open',
-        rating: 4.5,
-        distance: '0.5 km',
-        coordinates: [-74.0060, 40.7128]
-      },
-      { 
-        id: 2, 
-        name: 'HealthCare Plus', 
-        address: '456 Oak Ave, Midtown', 
-        phone: '+1-555-0456', 
-        status: 'open',
-        rating: 4.2,
-        distance: '1.2 km',
-        coordinates: [-73.9855, 40.7580]
-      },
-      { 
-        id: 3, 
-        name: 'MediCenter', 
-        address: '789 Pine Rd, Uptown', 
-        phone: '+1-555-0789', 
-        status: 'closed',
-        rating: 4.8,
-        distance: '2.1 km',
-        coordinates: [-73.9712, 40.7831]
-      },
-    ]);
-  }, []);
+  // Load data based on active section
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        switch (activeSection) {
+          case 'Dashboard':
+            const [reservationsData, statsData] = await Promise.all([
+              PharmacyDatabaseService.getReservations(user?.id),
+              PharmacyDatabaseService.getReservationStats(user?.id)
+            ]);
+            setReservations(reservationsData);
+            setStats(statsData);
+            break;
+          case 'Reserve':
+            const resData = await PharmacyDatabaseService.getReservations(user?.id);
+            setReservations(resData);
+            break;
+          case 'Pharmacies':
+            const pharmData = await PharmacyDatabaseService.getPharmacies();
+            setPharmacies(pharmData);
+            break;
+          case 'Search':
+            const medData = await PharmacyDatabaseService.getMedications();
+            setMedications(medData);
+            break;
+          default:
+            break;
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+
+    loadData();
+
+    // Set up real-time subscriptions
+    let reservationSubscription;
+    let pharmacySubscription;
+
+    if (activeSection === 'Dashboard' || activeSection === 'Reserve') {
+      reservationSubscription = PharmacyDatabaseService.subscribeToReservations(
+        (payload) => {
+          console.log('Realtime reservation update:', payload);
+          setReservations(prev => {
+            if (payload.eventType === 'DELETE') {
+              return prev.filter(r => r.id !== payload.old.id);
+            } else if (payload.eventType === 'INSERT') {
+              return [payload.new, ...prev];
+            } else {
+              return prev.map(r => r.id === payload.new.id ? payload.new : r);
+            }
+          });
+        },
+        user?.id
+      );
+    }
+
+    if (activeSection === 'Pharmacies') {
+      pharmacySubscription = PharmacyDatabaseService.subscribeToPharmacies(
+        (payload) => {
+          console.log('Realtime pharmacy update:', payload);
+          setPharmacies(prev => {
+            if (payload.eventType === 'DELETE') {
+              return prev.filter(p => p.id !== payload.old.id);
+            } else if (payload.eventType === 'INSERT') {
+              return [payload.new, ...prev];
+            } else {
+              return prev.map(p => p.id === payload.new.id ? payload.new : p);
+            }
+          });
+        }
+      );
+    }
+
+    return () => {
+      if (reservationSubscription) PharmacyDatabaseService.unsubscribe(reservationSubscription);
+      if (pharmacySubscription) PharmacyDatabaseService.unsubscribe(pharmacySubscription);
+    };
+  }, [activeSection, user?.id]);
 
   // Initialize MapBox map
   useEffect(() => {
     if (activeSection === 'Search' && mapView === 'map' && mapContainer.current && !map.current) {
-      // Using a simulated MapBox-like implementation since we can't load external MapBox
-      // In a real implementation, you would use: mapboxgl.Map()
       initializeMap();
     }
-  }, [activeSection, mapView]);
+  }, [activeSection, mapView, pharmacies]);
 
   const initializeMap = () => {
     // Simulated map initialization
@@ -147,31 +167,44 @@ const PharmacyDashboard = () => {
     }
   };
 
-  const handleFormSubmit = () => {
-    if (activeSection === 'Reserve') {
-      if (selectedItem) {
-        setReservations(reservations.map(item => 
-          item.id === selectedItem.id 
-            ? { ...item, patientName: formData.name, medication: formData.medication, quantity: parseInt(formData.quantity), pharmacy: formData.pharmacy, status: formData.status }
-            : item
-        ));
-      } else {
-        const newReservation = {
-          id: Date.now(),
-          patientName: formData.name,
-          medication: formData.medication,
-          quantity: parseInt(formData.quantity),
-          pharmacy: formData.pharmacy,
-          status: formData.status,
-          date: new Date().toISOString().split('T')[0],
-          time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-          coordinates: [-74.0060, 40.7128] // Default coordinates
-        };
-        setReservations([...reservations, newReservation]);
+  const handleFormSubmit = async () => {
+    try {
+      if (activeSection === 'Reserve') {
+        if (selectedItem) {
+          // Update existing reservation
+          const updatedReservation = await PharmacyDatabaseService.updateReservation(
+            selectedItem.id,
+            {
+              patientName: formData.name,
+              medication: formData.medication,
+              quantity: parseInt(formData.quantity),
+              pharmacy: formData.pharmacy,
+              status: formData.status
+            }
+          );
+          setReservations(reservations.map(item => 
+            item.id === selectedItem.id ? updatedReservation : item
+          ));
+        } else {
+          // Create new reservation
+          const newReservation = await PharmacyDatabaseService.createReservation(
+            {
+              patientName: formData.name,
+              medication: formData.medication,
+              quantity: parseInt(formData.quantity),
+              pharmacy: formData.pharmacy,
+              status: formData.status
+            },
+            user.id
+          );
+          setReservations([newReservation, ...reservations]);
+        }
+        setFormData({ name: '', medication: '', quantity: '', pharmacy: '', status: 'pending' });
+        setSelectedItem(null);
       }
+    } catch (error) {
+      console.error('Error handling reservation:', error);
     }
-    setFormData({ name: '', medication: '', quantity: '', pharmacy: '', status: 'pending' });
-    setSelectedItem(null);
   };
 
   const handleEdit = (item) => {
@@ -187,9 +220,26 @@ const PharmacyDashboard = () => {
     }
   };
 
-  const handleDelete = (id) => {
-    if (activeSection === 'Reserve') {
-      setReservations(reservations.filter(item => item.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      if (activeSection === 'Reserve') {
+        await PharmacyDatabaseService.deleteReservation(id);
+        setReservations(reservations.filter(item => item.id !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting reservation:', error);
+    }
+  };
+
+  const handleSearch = async () => {
+    try {
+      if (activeSection === 'Search') {
+        const results = await PharmacyDatabaseService.searchMedicationsAndPharmacies(searchTerm);
+        setMedications(results.medications);
+        setPharmacies(results.pharmacies);
+      }
+    } catch (error) {
+      console.error('Error searching:', error);
     }
   };
 
@@ -238,7 +288,7 @@ const PharmacyDashboard = () => {
                   <Calendar className="h-4 w-4 mr-2 text-blue-500" />
                   Total Reservations:
                 </span>
-                <span className="font-semibold text-gray-900">{reservations.length}</span>
+                <span className="font-semibold text-gray-900">{stats.total}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-gray-100">
                 <span className="flex items-center">
@@ -246,7 +296,7 @@ const PharmacyDashboard = () => {
                   Confirmed Today:
                 </span>
                 <span className="font-semibold text-green-600">
-                  {reservations.filter(r => r.status === 'confirmed').length}
+                  {stats.confirmed}
                 </span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-gray-100">
@@ -255,7 +305,7 @@ const PharmacyDashboard = () => {
                   Pending:
                 </span>
                 <span className="font-semibold text-yellow-600">
-                  {reservations.filter(r => r.status === 'pending').length}
+                  {stats.pending}
                 </span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-gray-100">
@@ -264,7 +314,7 @@ const PharmacyDashboard = () => {
                   Cancelled:
                 </span>
                 <span className="font-semibold text-red-600">
-                  {reservations.filter(r => r.status === 'cancelled').length}
+                  {stats.cancelled}
                 </span>
               </div>
               <div className="flex justify-between items-center py-2">
@@ -292,8 +342,8 @@ const PharmacyDashboard = () => {
     return (
       <div className="profile-dropdown">
         <div className="profile-header">
-          <p className="text-sm font-medium text-gray-900">John Doe</p>
-          <p className="text-xs text-gray-500">john.doe@pharmadash.com</p>
+          <p className="text-sm font-medium text-gray-900">{profile?.full_name || user?.email}</p>
+          <p className="text-xs text-gray-500">{user?.email}</p>
         </div>
         <button
           onClick={() => {
@@ -314,7 +364,10 @@ const PharmacyDashboard = () => {
           Profile
         </button>
         <div className="profile-separator">
-          <button className="profile-item logout">
+          <button 
+            onClick={signOut}
+            className="profile-item logout"
+          >
             <LogOut className="h-4 w-4 mr-3 text-red-500" />
             Sign Out
           </button>
@@ -331,7 +384,7 @@ const PharmacyDashboard = () => {
             <Calendar className="h-6 w-6 text-green-600" />
           </div>
           <div className="stats-text">
-            <div className="text-2xl font-bold text-gray-900">12</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.today}</div>
             <div className="text-sm text-gray-500">Today's Reservations</div>
           </div>
         </div>
@@ -341,7 +394,7 @@ const PharmacyDashboard = () => {
           </div>
           <div className="stats-text">
             <div className="text-2xl font-bold text-gray-900">
-              {reservations.filter(r => r.status === 'confirmed').length}
+              {stats.confirmed}
             </div>
             <div className="text-sm text-gray-500">Confirmed</div>
           </div>
@@ -352,7 +405,7 @@ const PharmacyDashboard = () => {
           </div>
           <div className="stats-text">
             <div className="text-2xl font-bold text-gray-900">
-              {reservations.filter(r => r.status === 'pending').length}
+              {stats.pending}
             </div>
             <div className="text-sm text-gray-500">Pending</div>
           </div>
@@ -405,6 +458,7 @@ const PharmacyDashboard = () => {
               placeholder="Search for medications, pharmacies, or locations..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
@@ -421,81 +475,58 @@ const PharmacyDashboard = () => {
               <option value="5km">Within 5km</option>
               <option value="10km">Within 10km</option>
             </select>
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setMapView('list')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  mapView === 'list' 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-500 hover:text-gray-900'
-                }`}
-              >
-                List
-              </button>
-              <button
-                onClick={() => {
-                  setMapView('map');
-                  setTimeout(initializeMap, 100);
-                }}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  mapView === 'map' 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-500 hover:text-gray-900'
-                }`}
-              >
-                <Map className="h-4 w-4 inline mr-1" />
-                Map
-              </button>
-            </div>
           </div>
         </div>
       </div>
-      {mapView === 'map' && (
-        <div className="map-card">
-          <div className="map-header">
-            <h3 className="text-lg font-medium text-gray-900 flex items-center">
-              <MapPin className="h-5 w-5 mr-2 text-green-600" />
-              Pharmacy Locations
-            </h3>
-          </div>
-          <div className="map-body">
-            <div ref={mapContainer} className="w-full"></div>
-          </div>
+
+      <div className="map-card">
+        <div className="map-header">
+          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+            <MapPin className="h-5 w-5 mr-2 text-green-600" />
+            Pharmacy Locations
+          </h3>
         </div>
-      )}
-      {mapView === 'list' && (
-        <div className="results-card">
-          <div className="results-header">
-            <h3 className="text-lg font-medium text-gray-900">Search Results</h3>
-          </div>
-          <div className="divide-y divide-gray-200">
-            <div className="results-item">
+        <div className="map-body">
+          <GoogleMap 
+            pharmacies={pharmacies} 
+            onMarkerClick={(pharmacy) => {
+              alert(`${pharmacy.name}\n${pharmacy.address}\nStatus: ${pharmacy.status}\nRating: ${pharmacy.rating}⭐`);
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="results-card mt-6">
+        <div className="results-header">
+          <h3 className="text-lg font-medium text-gray-900">Search Results</h3>
+        </div>
+        <div className="divide-y divide-gray-200">
+          {medications.slice(0, 5).map((medication) => (
+            <div key={medication.id} className="results-item">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <h4 className="text-sm font-medium text-gray-900">Aspirin 100mg</h4>
-                  <p className="text-sm text-gray-500">Available at 3 nearby pharmacies</p>
-                  <p className="text-sm text-green-600">Starting from $5.99</p>
+                  <h4 className="text-sm font-medium text-gray-900">{medication.name}</h4>
+                  <p className="text-sm text-gray-500">{medication.description}</p>
+                  <p className="text-sm text-green-600">${medication.price}</p>
                 </div>
-                <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                <button 
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                  onClick={() => {
+                    setActiveSection('Reserve');
+                    setFormData(prev => ({
+                      ...prev,
+                      medication: medication.name,
+                      pharmacy: medication.pharmacy?.name || ''
+                    }));
+                  }}
+                >
                   Reserve
                 </button>
               </div>
             </div>
-            <div className="results-item">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h4 className="text-sm font-medium text-gray-900">Ibuprofen 200mg</h4>
-                  <p className="text-sm text-gray-500">Available at 5 nearby pharmacies</p>
-                  <p className="text-sm text-green-600">Starting from $3.49</p>
-                </div>
-                <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                  Reserve
-                </button>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 
@@ -522,6 +553,13 @@ const PharmacyDashboard = () => {
         <div className="reservations-card">
           <div className="reservations-header">
             <h3 className="text-lg font-medium text-gray-900">Reservations</h3>
+            <button 
+              className="text-green-600 text-sm font-medium"
+              onClick={() => setActiveSection('Search')}
+            >
+              <Plus className="h-4 w-4 inline mr-1" />
+              New Reservation
+            </button>
           </div>
           <div className="divide-y divide-gray-200">
             {filteredReservations.map((reservation) => (
@@ -580,14 +618,14 @@ const PharmacyDashboard = () => {
                       <h4 className="text-sm font-medium text-gray-900">{pharmacy.name}</h4>
                       <p className="text-sm text-gray-500 flex items-center">
                         <MapPin className="h-3 w-3 mr-1" />
-                        {pharmacy.address} • {pharmacy.distance}
+                        {pharmacy.address} • {pharmacy.distance || 'N/A'}
                       </p>
                       <p className="text-sm text-gray-500">{pharmacy.phone}</p>
                       <div className="flex items-center mt-1">
                         <div className="flex text-yellow-400">
-                          {'★'.repeat(Math.floor(pharmacy.rating))}
+                          {'★'.repeat(Math.floor(pharmacy.rating || 0))}
                         </div>
-                        <span className="text-xs text-gray-500 ml-1">({pharmacy.rating})</span>
+                        <span className="text-xs text-gray-500 ml-1">({pharmacy.rating || '0'})</span>
                       </div>
                     </div>
                   </div>
@@ -607,6 +645,14 @@ const PharmacyDashboard = () => {
   );
 
   const renderMainContent = () => {
+    if (loading) {
+      return <div className="loading-spinner">Loading...</div>;
+    }
+
+    if (!user) {
+      return <div className="auth-message">Please sign in to access the dashboard</div>;
+    }
+
     switch (activeSection) {
       case 'Dashboard':
         return renderDashboard();
@@ -640,6 +686,10 @@ const PharmacyDashboard = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showProfileDropdown]);
 
+  if (loading) {
+    return <div className="loading-screen">Loading...</div>;
+  }
+
   return (
     <div className="pharmacy-dashboard">
       <header className="navbar">
@@ -647,165 +697,189 @@ const PharmacyDashboard = () => {
           <div className="navbar-brand">
             <div className="text-xl font-bold text-green-600">SwiftMeds</div>
           </div>
-          <div className="navbar-profile">
+          {user ? (
+            <div className="navbar-profile">
+              <button
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                className="flex items-center space-x-2 text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none"
+              >
+                <span>{profile?.full_name || user.email}</span>
+                <ChevronDown className="h-4 w-4" />
+              </button>
+              {renderProfileDropdown()}
+            </div>
+          ) : (
             <button
-              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-              className="flex items-center space-x-2 text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none"
+              onClick={() => window.location.href = '/login'}
+              className="text-green-600 hover:text-green-800"
             >
-              <span>John Doe</span>
-              <ChevronDown className="h-4 w-4" />
+              Sign In
             </button>
-            {renderProfileDropdown()}
-          </div>
+          )}
         </div>
       </header>
-      <div className="container">
-        <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-3">
-            <div className="sidebar">
-              <div className="sidebar-content">
-                <nav className="space-y-2">
-                  {sidebarItems.map((item) => {
-                    const IconComponent = item.icon;
-                    return (
-                      <button
-                        key={item.name}
-                        onClick={() => setActiveSection(item.name)}
-                        className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
-                          activeSection === item.name
-                            ? 'bg-green-100 text-green-700 border-r-2 border-green-600'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        <IconComponent className="h-5 w-5 mr-3" />
-                        {item.name}
-                      </button>
-                    );
-                  })}
-                </nav>
-              </div>
-            </div>
-          </div>
-          <div className="col-span-6">
-            <div className="main-header">
-              <h1 className="text-2xl font-bold text-gray-900">{activeSection}</h1>
-              <p className="text-gray-600">Manage your pharmaceutical needs efficiently</p>
-            </div>
-            {renderMainContent()}
-          </div>
-          <div className="col-span-3">
-            {activeSection === 'Reserve' && (
-              <div className="form-card">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  {selectedItem ? 'Edit Reservation' : 'New Reservation'}
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Patient Name</label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Medication</label>
-                    <input
-                      type="text"
-                      value={formData.medication}
-                      onChange={(e) => setFormData({ ...formData, medication: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                    <input
-                      type="number"
-                      value={formData.quantity}
-                      onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Pharmacy</label>
-                    <select
-                      value={formData.pharmacy}
-                      onChange={(e) => setFormData({ ...formData, pharmacy: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Select Pharmacy</option>
-                      {pharmacies.map(pharmacy => (
-                        <option key={pharmacy.id} value={pharmacy.name}>{pharmacy.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="confirmed">Confirmed</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={handleFormSubmit}
-                      className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                    >
-                      {selectedItem ? 'Update' : 'Create'}
-                    </button>
-                    {selectedItem && (
-                      <button
-                        onClick={() => {
-                          setSelectedItem(null);
-                          setFormData({ name: '', medication: '', quantity: '', pharmacy: '', status: 'pending' });
-                        }}
-                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </div>
+      {user ? (
+        <div className="container">
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-3">
+              <div className="sidebar">
+                <div className="sidebar-content">
+                  <nav className="space-y-2">
+                    {sidebarItems.map((item) => {
+                      const IconComponent = item.icon;
+                      return (
+                        <button
+                          key={item.name}
+                          onClick={() => setActiveSection(item.name)}
+                          className={`w-full flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors ${
+                            activeSection === item.name
+                              ? 'bg-green-100 text-green-700 border-r-2 border-green-600'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <IconComponent className="h-5 w-5 mr-3" />
+                          {item.name}
+                        </button>
+                      );
+                    })}
+                  </nav>
                 </div>
               </div>
-            )}
-            <div className="stats-card mt-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Stats</h3>
-              <div className="space-y-3 text-sm text-gray-600">
-                <div className="flex justify-between">
-                  <span>Total Reservations:</span>
-                  <span className="font-medium">{reservations.length}</span>
+            </div>
+            <div className="col-span-6">
+              <div className="main-header">
+                <h1 className="text-2xl font-bold text-gray-900">{activeSection}</h1>
+                <p className="text-gray-600">Manage your pharmaceutical needs efficiently</p>
+              </div>
+              {renderMainContent()}
+            </div>
+            <div className="col-span-3">
+              {activeSection === 'Reserve' && (
+                <div className="form-card">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    {selectedItem ? 'Edit Reservation' : 'New Reservation'}
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Patient Name</label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Medication</label>
+                      <input
+                        type="text"
+                        value={formData.medication}
+                        onChange={(e) => setFormData({ ...formData, medication: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                      <input
+                        type="number"
+                        value={formData.quantity}
+                        onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Pharmacy</label>
+                      <select
+                        value={formData.pharmacy}
+                        onChange={(e) => setFormData({ ...formData, pharmacy: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="">Select Pharmacy</option>
+                        {pharmacies.map(pharmacy => (
+                          <option key={pharmacy.id} value={pharmacy.name}>{pharmacy.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select
+                        value={formData.status}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={handleFormSubmit}
+                        className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                      >
+                        {selectedItem ? 'Update' : 'Create'}
+                      </button>
+                      {selectedItem && (
+                        <button
+                          onClick={() => {
+                            setSelectedItem(null);
+                            setFormData({ name: '', medication: '', quantity: '', pharmacy: '', status: 'pending' });
+                          }}
+                          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Confirmed Today:</span>
-                  <span className="font-medium text-green-600">
-                    {reservations.filter(r => r.status === 'confirmed' && r.date === '2025-08-04').length}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Pending:</span>
-                  <span className="font-medium text-yellow-600">
-                    {reservations.filter(r => r.status === 'pending').length}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Partner Pharmacies:</span>
-                  <span className="font-medium">{pharmacies.length}</span>
+              )}
+              <div className="stats-card mt-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Stats</h3>
+                <div className="space-y-3 text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Total Reservations:</span>
+                    <span className="font-medium">{stats.total}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Confirmed Today:</span>
+                    <span className="font-medium text-green-600">
+                      {stats.confirmed}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Pending:</span>
+                    <span className="font-medium text-yellow-600">
+                      {stats.pending}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Partner Pharmacies:</span>
+                    <span className="font-medium">{pharmacies.length}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="auth-container">
+          <div className="auth-card">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Welcome to SwiftMeds</h2>
+            <p className="text-gray-600 mb-8">Please sign in to access your pharmacy dashboard</p>
+            <button
+              onClick={() => window.location.href = '/login'}
+              className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            >
+              Sign In
+            </button>
+          </div>
+        </div>
+      )}
       {renderQuickStatsModal()}
     </div>
   );

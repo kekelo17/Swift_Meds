@@ -1,5 +1,5 @@
 // services/pharmacyDatabaseService.js
-import { supabase, TABLES, REALTIME_CHANNELS } from '../config/supabase'
+import { supabase, TABLES, REALTIME_CHANNELS } from './supabase_config'
 
 export class PharmacyDatabaseService {
   // ==================== RESERVATIONS ====================

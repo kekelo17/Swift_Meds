@@ -1,5 +1,6 @@
 // services/pharmacyAuthService.js
-import { supabase } from '../config/supabase'
+import { supabase } from './supabase_config';
+import React from 'react';
 
 export class PharmacyAuthService {
   // ==================== AUTHENTICATION ====================
