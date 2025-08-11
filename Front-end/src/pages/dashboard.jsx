@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import GoogleMap from '../component/googlemap.jsx';
+import { Link, useNavigate } from 'react-router-dom'
+import GoogleMap from '../googlemap.jsx';
 import './CSS/dashboard.css';
+import './CSS/auth.css';
 import { 
   Search, 
   User, 
@@ -28,8 +30,10 @@ import {
   BarChart3,
   Map
 } from 'lucide-react';
-import { PharmacyDatabaseService } from '../back-end/supabase/pharmacy_database_service.js';
-import { PharmacyAuthService, usePharmacyAuth } from '../back-end/supabase/pharmacy_auth_service.js';
+import { PharmacyDatabaseService } from '/home/keumoe/Desktop/PHARMAP/Back-end/src/service/pharmacy_database_service.js';
+import { PharmacyAuthService, usePharmacyAuth } from '/home/keumoe/Desktop/PHARMAP/Back-end/src/service/pharmacy_auth_service.js';
+
+const navigate = useNavigate();
 
 const PharmacyDashboard = () => {
   const [activeSection, setActiveSection] = useState('Dashboard');
@@ -142,12 +146,13 @@ const PharmacyDashboard = () => {
   }, [activeSection, user?.id]);
 
   // Initialize MapBox map
+  /*
   useEffect(() => {
     if (activeSection === 'Search' && mapView === 'map' && mapContainer.current && !map.current) {
       initializeMap();
     }
   }, [activeSection, mapView, pharmacies]);
-
+  */
   const initializeMap = () => {
     // Simulated map initialization
     // In real implementation: map.current = new mapboxgl.Map({...})
@@ -166,6 +171,7 @@ const PharmacyDashboard = () => {
       `;
     }
   };
+
 
   const handleFormSubmit = async () => {
     try {
@@ -710,10 +716,10 @@ const PharmacyDashboard = () => {
             </div>
           ) : (
             <button
-              onClick={() => window.location.href = '/login'}
+              onClick={() => navigate("/signup")}
               className="text-green-600 hover:text-green-800"
             >
-              Sign In
+              Sign Up
             </button>
           )}
         </div>
@@ -870,10 +876,10 @@ const PharmacyDashboard = () => {
         <div className="auth-container">
           <div className="auth-card">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Welcome to SwiftMeds</h2>
-            <p className="text-gray-600 mb-8">Please sign in to access your pharmacy dashboard</p>
+            <p className="text-gray-600 mb-8">Please sign in to access your SwiftMeds dashboard</p>
             <button
-              onClick={() => window.location.href = '/login'}
-              className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              onClick={() => navigate("/signin")}
+              className="w-full bg-green-600 text-green-600 py-2 px-4 rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
             >
               Sign In
             </button>

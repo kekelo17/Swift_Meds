@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { PharmacyAuthService } from '../../back-end/supabase/pharmacy_auth_service';
+import { PharmacyAuthService } from '/home/keumoe/Desktop/PHARMAP/Back-end/src/service/pharmacy_auth_service.js';
 import { 
   Mail, 
   ChevronLeft,
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
-import './CSS/auth.css';
+import '../CSS/auth.css';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -91,7 +91,7 @@ const ForgotPassword = () => {
 
             <div className="auth-footer">
               <span>Remember your password?</span>
-              <Link to="./sign-in" className="auth-link">
+              <Link to="/sign-in" className="auth-link">
                 Sign in
               </Link>
             </div>

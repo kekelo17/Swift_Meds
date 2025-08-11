@@ -1,4 +1,5 @@
-/* Auth Container */
+@import "tailwindcss";
+
 .auth-container {
   min-height: 100vh;
   display: flex;

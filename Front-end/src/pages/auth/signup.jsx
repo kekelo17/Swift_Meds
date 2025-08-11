@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { PharmacyAuthService } from '../../back-end/supabase/pharmacy_auth_service';
+import { PharmacyAuthService } from '/home/keumoe/Desktop/PHARMAP/Back-end/src/service/pharmacy_auth_service.js';
 import { 
   User, 
   Mail, 
@@ -11,7 +11,7 @@ import {
   AlertCircle,
   Shield
 } from 'lucide-react';
-import './CSS/auth.css';
+import '../CSS/auth.css';
 
 const SignUp = () => {
   const [fullName, setFullName] = useState('');
@@ -61,7 +61,7 @@ const SignUp = () => {
 
         <div className="auth-header">
           <h2 className="text-2xl font-bold text-gray-900">Join Swift Meds</h2>
-          <p className="text-gray-600">Create your pharmacy account</p>
+          <p className="text-gray-600">Create your account</p>
         </div>
 
         {error && (

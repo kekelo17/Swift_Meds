@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { PharmacyAuthService } from '../../back-end/supabase/pharmacy_auth_service';
+import { PharmacyAuthService } from '/home/keumoe/Desktop/PHARMAP/Back-end/src/service/pharmacy_auth_service.js';
 import { 
   Mail, 
   Lock, 
@@ -9,7 +9,7 @@ import {
   ChevronLeft,
   AlertCircle
 } from 'lucide-react';
-import './CSS/auth.css';
+import '../CSS/auth.css';
 
 const SignIn = () => {
   const [email, setEmail] = useState('');
@@ -27,7 +27,7 @@ const SignIn = () => {
     try {
       const { error } = await PharmacyAuthService.signIn(email, password);
       if (error) throw error;
-      navigate('../../front-end/dashboard.jsx');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Failed to sign in');
     } finally {

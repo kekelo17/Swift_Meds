@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { PharmacyAuthService } from '../../back-end/supabase/pharmacy_auth_service';
+import { PharmacyAuthService } from '/home/keumoe/Desktop/PHARMAP/Back-end/src/service/pharmacy_auth_service.js';
 import { 
   Lock, 
   ChevronLeft,
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
-import './CSS/auth.css';
+import '../CSS/auth.css';
 
 const OTPVerification = () => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -47,7 +47,7 @@ const OTPVerification = () => {
       const { error } = await PharmacyAuthService.verifyOTP(email, otpCode);
       if (error) throw error;
       setSuccess(true);
-      setTimeout(() => navigate('../../front-end/dashboard.jsx'), 2000);
+      setTimeout(() => navigate('/dashboard'), 2000);
     } catch (err) {
       setError(err.message || 'Failed to verify OTP');
     } finally {
