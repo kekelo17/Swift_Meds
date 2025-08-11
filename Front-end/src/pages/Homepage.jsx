@@ -5,7 +5,7 @@ const Homepage = () => {
     const navigate = useNavigate()
   return (
     <div>
-        <button onClick={()=> navigate("/login")}>Login</button>
+        <button onClick={()=> navigate("/signin")}>Login</button>
         <Link to="/signup">Singup</Link>
     </div>
   )

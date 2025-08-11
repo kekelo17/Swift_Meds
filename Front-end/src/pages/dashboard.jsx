@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom'
-import GoogleMap from '../googlemap.jsx';
+import OpenStreetMap from './leaflet';
 import './CSS/dashboard.css';
 import './CSS/auth.css';
 import { 
@@ -145,34 +145,7 @@ const PharmacyDashboard = () => {
     };
   }, [activeSection, user?.id]);
 
-  // Initialize MapBox map
-  /*
-  useEffect(() => {
-    if (activeSection === 'Search' && mapView === 'map' && mapContainer.current && !map.current) {
-      initializeMap();
-    }
-  }, [activeSection, mapView, pharmacies]);
-  */
-  const initializeMap = () => {
-    // Simulated map initialization
-    // In real implementation: map.current = new mapboxgl.Map({...})
-    if (mapContainer.current) {
-      mapContainer.current.innerHTML = `
-        <div class="map-container">
-          <div class="map-label">MapBox View - Pharmacies Near You</div>
-          ${pharmacies.map((pharmacy, index) => `
-            <div class="map-marker ${pharmacy.status === 'open' ? 'open' : 'closed'}" 
-                 onclick="alert('${pharmacy.name}\\n${pharmacy.address}\\nStatus: ${pharmacy.status}\\nRating: ${pharmacy.rating}⭐')">
-              📍 ${pharmacy.name}
-            </div>
-          `).join('')}
-          <div class="map-info">Click markers for details</div>
-        </div>
-      `;
-    }
-  };
-
-
+  // Handle form submission for reservations
   const handleFormSubmit = async () => {
     try {
       if (activeSection === 'Reserve') {
@@ -492,8 +465,8 @@ const PharmacyDashboard = () => {
             Pharmacy Locations
           </h3>
         </div>
-        <div className="map-body">
-          <GoogleMap 
+        <div className="map-body" style={{ height: '500px' }}>
+          <OpenStreetMap 
             pharmacies={pharmacies} 
             onMarkerClick={(pharmacy) => {
               alert(`${pharmacy.name}\n${pharmacy.address}\nStatus: ${pharmacy.status}\nRating: ${pharmacy.rating}⭐`);

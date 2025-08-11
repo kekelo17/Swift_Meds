@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.54.0",
     "@tailwindcss/vite": "^4.1.11",
     "@vis.gl/react-google-maps": "^1.5.5",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.539.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
