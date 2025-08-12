@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom';
 import OpenStreetMap from './leaflet';
 import './CSS/dashboard.css';
 import './CSS/auth.css';
@@ -30,12 +30,11 @@ import {
   BarChart3,
   Map
 } from 'lucide-react';
-import { PharmacyDatabaseService } from '/home/keumoe/Desktop/PHARMAP/Back-end/src/service/pharmacy_database_service.js';
-import { PharmacyAuthService, usePharmacyAuth } from '/home/keumoe/Desktop/PHARMAP/Back-end/src/service/pharmacy_auth_service.js';
-
-const navigate = useNavigate();
+import { PharmacyDatabaseService } from '../../../Back-end/services/pharmacy_database_service.js';
+import { PharmacyAuthService, usePharmacyAuth } from '../../../Back-end/services/pharmacy_auth_service.js';
 
 const PharmacyDashboard = () => {
+  const navigate = useNavigate(); // Move this inside the component
   const [activeSection, setActiveSection] = useState('Dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   const [reservations, setReservations] = useState([]);
@@ -44,22 +43,10 @@ const PharmacyDashboard = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showQuickStats, setShowQuickStats] = useState(false);
-  const [mapView, setMapView] = useState('list'); // 'list' or 'map'
+  const [mapView, setMapView] = useState('list');
   const [stats, setStats] = useState({
     total: 0,
     confirmed: 0,
-    pending: 0,
-    cancelled: 0,
-    today: 0
-  });
-  const mapContainer = useRef(null);
-  const map = useRef(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    medication: '',
-    quantity: '',
-    pharmacy: '',
-    status: 'pending'
   });
 
   // Use auth hook
@@ -689,7 +676,7 @@ const PharmacyDashboard = () => {
             </div>
           ) : (
             <button
-              onClick={() => navigate("/signup")}
+              onClick={() => navigate("/auth/signup")}
               className="text-green-600 hover:text-green-800"
             >
               Sign Up
@@ -851,8 +838,8 @@ const PharmacyDashboard = () => {
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Welcome to SwiftMeds</h2>
             <p className="text-gray-600 mb-8">Please sign in to access your SwiftMeds dashboard</p>
             <button
-              onClick={() => navigate("/signin")}
-              className="w-full bg-green-600 text-green-600 py-2 px-4 rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              onClick={() => navigate("/auth/signin")}
+              className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
             >
               Sign In
             </button>
