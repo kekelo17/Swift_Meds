@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { PharmacyAuthService } from '/home/keumoe/Desktop/PHARMAP/Back-end/src/service/pharmacy_auth_service.js';
+import { PharmacyAuthService } from '../../../../Back-end/services/pharmacy_auth_service.js';
 import { 
   Lock, 
   ChevronLeft,

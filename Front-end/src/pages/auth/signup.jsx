@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { PharmacyAuthService } from '/home/keumoe/Desktop/PHARMAP/Back-end/src/service/pharmacy_auth_service.js';
+import { PharmacyAuthService } from '../../../../Back-end/services/pharmacy_auth_service.js';
 import { 
   User, 
   Mail, 
@@ -165,7 +165,7 @@ const SignUp = () => {
 
           <div className="auth-footer">
             <span>Already have an account?</span>
-            <Link to="./sign-in" className="auth-link">
+            <Link to="/signin" className="auth-link">
               Sign in
             </Link>
           </div>
