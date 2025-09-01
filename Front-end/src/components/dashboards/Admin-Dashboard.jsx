@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AdminDatabaseService } from '../../../Back-end/services/admin_database_service.js';
-import { usePharmacyAuth } from '../../../Back-end/services/pharmacy_auth_service.js';
+import { PharmacyDatabaseService } from '../../../../Back-end/services/pharmacy_database_service.js';
+import { usePharmacyAuth } from '../../../../Back-end/hooks/usePharmacyAuth.js';
 import Sidebar from './Shared/Sidebar';
 import Navbar from './Shared/Navbar';
 
@@ -13,7 +13,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await AdminDatabaseService.getAdminStats();
+        const data = await PharmacyDatabaseService.getAdminStats();
         setStats(data);
       } catch (error) {
         console.error('Error loading admin data:', error);

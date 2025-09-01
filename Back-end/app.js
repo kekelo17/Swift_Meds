@@ -1,10 +1,12 @@
-import 'dotenv/config';
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import './config/supabase.js';
 import authRoutes from './routes/authRoutes.js';
 import pharmacyRoutes from './routes/pharmacyRoutes.js';
 import errorMiddleware from './middleware/errorMiddleware.js';
+
 
 dotenv.config();
 

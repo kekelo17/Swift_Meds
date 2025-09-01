@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ClientDatabaseService } from '../../../Back-end/services/client_database_service.js';
-import { usePharmacyAuth } from '../../../Back-end/services/pharmacy_auth_service.js';
+import { PharmacyDatabaseService } from '../../../../Back-end/services/pharmacy_database_service.js';
+import { usePharmacyAuth } from '../../../../Back-end/hooks/usePharmacyAuth.js';
 import Sidebar from './Shared/Sidebar';
 import Navbar from './Shared/Navbar';
 import ReservationForm from './Shared/ReservationForm';
@@ -14,7 +14,7 @@ const ClientDashboard = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await ClientDatabaseService.getClientReservations(user?.id);
+        const data = await PharmacyDatabaseService.getClientReservations(user?.id);
         setReservations(data);
       } catch (error) {
         console.error('Error loading client data:', error);

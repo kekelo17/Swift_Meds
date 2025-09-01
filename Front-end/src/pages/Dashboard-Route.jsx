@@ -1,10 +1,10 @@
 import React from 'react';
 import { useNavigate, Routes, Route } from 'react-router-dom';
-import { usePharmacyAuth } from '../../../Back-end/services/pharmacy_auth_service.js';
-import AdminDashboard from './dashboards/AdminDashboard';
-import ClientDashboard from './dashboards/ClientDashboard';
-import PharmacyDashboard from './dashboards/PharmacyDashboard';
-import AuthScreen from './AuthScreen';
+import { usePharmacyAuth } from '../../../Back-end/hooks/usePharmacyAuth.js';
+import AdminDashboard from '../components/dashboards/Admin-Dashboard';
+import ClientDashboard from '../components/dashboards/Client-Dashboard';
+import PharmacyDashboard from '../components/dashboards/Pharmacy-Dashboard';
+import AuthScreen from '../components/dashboards/Shared/AuthScreen';
 
 const DashboardRouter = () => {
   const { user, loading, userType } = usePharmacyAuth();

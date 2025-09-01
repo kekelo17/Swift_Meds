@@ -1,29 +1,10 @@
-/*
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Homepage from './pages/Homepage';
-import PharmacyDashboard from "./pages/dashboard.jsx"; 
-
-const App = () => {
-  return (
-    <Router>
-      <Routes>
-        <Route path='/' element={<Homepage />} /> 
-        <Route path='/dashboard' element={<PharmacyDashboard />} /> 
-      </Routes>
-    </Router>
-  )
-}
-
-export default App
-*/
-
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import Homepage from './pages/Homepage';
-import PharmacyDashboard from "./pages/dashboard.jsx";
+import Homepage from './pages/Homepage.jsx';
+import DashboardRouter from "./pages/Dashboard-Route.jsx";
 import SignIn from './pages/auth/signin.jsx';
 import SignUp from './pages/auth/signup.jsx';
 import ForgetPassword from './pages/auth/forgot-password.jsx';
-import { usePharmacyAuth } from '../../Back-end/services/pharmacy_auth_service.js';
+import { usePharmacyAuth } from '../../Back-end/hooks/usePharmacyAuth.js';
 
 const App = () => {
   const { user, loading } = usePharmacyAuth();
@@ -40,18 +21,18 @@ const App = () => {
     <Router>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Homepage />} />
-        <Route path="/auth/signin" element={user ? <Navigate to="/dashboard" /> : <SignIn />} />
+        <Route path="/" element={user ? <Navigate to="/Dashboard-Route" /> : <Homepage />} />
+        <Route path="/auth/signin" element={user ? <Navigate to="/Dashboard-Route" /> : <SignIn />} />
         
         {/* Protected routes */}
         <Route 
-          path="/dashboard" 
-          element={user ? <PharmacyDashboard /> : <Navigate to="/auth/signin" />} 
+          path="/Dashboard-Route" 
+          element={user ? <DashboardRouter /> : <Navigate to="/auth/signin" />} 
         />
-        <Route path="/auth/signup" element={user ? <Navigate to="/dashboard" /> : <SignUp />} />
-        <Route path="/auth/forgot-password" element={user ? <Navigate to="/dashboard" /> : <ForgetPassword />} />
+        <Route path="/auth/signup" element={user ? <Navigate to="/Dashboard-Route" /> : <SignUp />} />
+        <Route path="/auth/forgot-password" element={user ? <Navigate to="/Dashboard-Route" /> : <ForgetPassword />} />
         {/* Fallback route */}
-        <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} />} />
+        <Route path="*" element={<Navigate to={user ? "/Dashboard-Route" : "/"} />} />
       </Routes>
     </Router>
   );
