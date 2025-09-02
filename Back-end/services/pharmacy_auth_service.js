@@ -258,35 +258,32 @@ export class PharmacyAuthService {
   // ==================== AUTHENTICATION ====================
   
   static async signUp(email, password, userData = {}) {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: userData.fullName || '',
-            role: userData.role || 'user'
-          }
-        }
-      });
-      
-      if (error) throw error;
-
-      // Create user profile in public.users table
-      if (data.user) {
-        await this.createUserProfile(data.user.id, {
-          email: data.user.email,
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
           full_name: userData.fullName || '',
           role: userData.role || 'user'
-        });
+        }
       }
-
-      return data;
-    } catch (error) {
-      console.error('Error signing up:', error);
+    });
+    
+    if (error) {
+      // Handle specific errors
+      if (error.message.includes('seconds')) {
+        throw new Error('Please wait 30 seconds before trying again. This helps prevent spam.');
+      }
       throw error;
     }
+
+    return data;
+  } catch (error) {
+    console.error('Error signing up:', error);
+    throw error;
   }
+}
 
   static async signIn(email, password) {
     try {

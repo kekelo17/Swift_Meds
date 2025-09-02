@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import './CSS/homepage.css';
 
 const Homepage = () => {
@@ -15,11 +15,6 @@ const Homepage = () => {
 
   return (
     <div className="swiftmeds-app">
-      <div className="bg-shapes">
-        <div className="bg-shape bg-shape-1"></div>
-        <div className="bg-shape bg-shape-2"></div>
-      </div>
-
       {/* Header */}
       <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
         <div className="container">
@@ -32,117 +27,105 @@ const Homepage = () => {
             </a>
             
             <ul className="nav-links">
-              <li><a href="#features" className="nav-link">Features</a></li>
-              <li><a href="#testimonials" className="nav-link">Reviews</a></li>
-              <li><a href="#pricing" className="nav-link">Pricing</a></li>
+              <li><a href="#home" className="nav-link">Home</a></li>
+              <li><a href="#about" className="nav-link">About</a></li>
+              <li><a href="#services" className="nav-link">Services</a></li>
+              <li><a href="#contact" className="nav-link">Contact</a></li>
             </ul>
 
             <div className="nav-buttons">
-              <a href="../auth/signin" className="nav-link">
-                <i className="fas fa-sign-in-alt"></i> Sign In
-              </a>
-              <a href="../auth/signup" className="btn-primary">
-                <i className="fas fa-user-plus"></i> Get Started
-              </a>
+              <a href="../auth/signin" className="btn-signin">Sign In</a>
             </div>
           </nav>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="hero">
+      <section className="hero" id="home">
         <div className="container">
-          <div className="hero-grid">
-            <div className="hero-content">
-              <div className="trust-badge">
-                <i className="fas fa-star"></i>
-                Trusted by 50,000+ users
-              </div>
-              
+          <div className="hero-content">
+            <div className="hero-text">
               <h1 className="hero-title">
-                Your Health,
-                <span className="gradient-text">Simplified</span>
+                The Future of Healthcare
+                <span className="hero-subtitle">with Latest Technology</span>
               </h1>
-              
               <p className="hero-description">
-                Revolutionary pharmacy management platform that connects patients, pharmacies, and healthcare providers in one seamless ecosystem.
+                Expert tech to elevate your medication. Let's take your business further.
               </p>
-              
               <div className="hero-buttons">
-                <a href="#" className="btn-primary">
-                  Start Free Trial
-                  <i className="fas fa-arrow-right"></i>
-                </a>
-                <a href="#" className="btn-secondary">
-                  <i className="fas fa-play"></i>
-                  Watch Demo
-                </a>
+                <a href="../auth/signup" className="btn-primary">Get Started</a>
+                <a href="#" className="btn-secondary">Try Demo</a>
               </div>
-
-              <div className="stats-grid">
-                <div className="stat-item">
-                  <div className="stat-icon">
-                    <i className="fas fa-users"></i>
-                  </div>
-                  <div className="stat-number">50K+</div>
-                  <div className="stat-label">Active Users</div>
+              <div className="hero-rating">
+                <div className="stars">
+                  <i className="fas fa-star"></i>
+                  <i className="fas fa-star"></i>
+                  <i className="fas fa-star"></i>
+                  <i className="fas fa-star"></i>
+                  <i className="fas fa-star"></i>
+                  <span className="rating-text">4.8</span>
                 </div>
-                <div className="stat-item">
-                  <div className="stat-icon">
-                    <i className="fas fa-map-marker-alt"></i>
-                  </div>
-                  <div className="stat-number">1000+</div>
-                  <div className="stat-label">Partner Pharmacies</div>
-                </div>
-                <div className="stat-item">
-                  <div className="stat-icon">
-                    <i className="fas fa-chart-line"></i>
-                  </div>
-                  <div className="stat-number">99.9%</div>
-                  <div className="stat-label">Uptime</div>
-                </div>
-                <div className="stat-item">
-                  <div className="stat-icon">
-                    <i className="fas fa-heart"></i>
-                  </div>
-                  <div className="stat-number">24/7</div>
-                  <div className="stat-label">Support</div>
-                </div>
+                <p className="rating-description">5K+ reviews</p>
               </div>
             </div>
 
             <div className="hero-visual">
-              <div className="dashboard-mockup">
-                <div className="dashboard-header">
-                  <h3 className="dashboard-title">Dashboard</h3>
-                  <p className="dashboard-subtitle">Welcome back, Sarah!</p>
-                </div>
-                
-                <div className="dashboard-content">
-                  <div className="notification-item">
-                    <div className="notification-info">
-                      <div className="notification-icon blue">
-                        <i className="fas fa-calendar"></i>
-                      </div>
-                      <div>
-                        <div className="notification-title">Prescription Ready</div>
-                        <div className="notification-subtitle">CVS Pharmacy - 2:30 PM</div>
-                      </div>
+              <div className="hero-cards">
+                <div className="stat-card large">
+                  <div className="stat-visual">
+                    <div className="pills-visual">
+                      <div className="pill pill-1"></div>
+                      <div className="pill pill-2"></div>
+                      <div className="pill pill-3"></div>
+                      <div className="pill pill-4"></div>
                     </div>
-                    <div className="status-dot green"></div>
                   </div>
-                  
-                  <div className="notification-item">
-                    <div className="notification-info">
-                      <div className="notification-icon yellow">
-                        <i className="fas fa-pills"></i>
-                      </div>
-                      <div>
-                        <div className="notification-title">Refill Reminder</div>
-                        <div className="notification-subtitle">Due in 3 days</div>
-                      </div>
+                </div>
+
+                <div className="stat-card dark">
+                  <div className="stat-number">100+</div>
+                  <div className="stat-label">
+                    <span>Pharmacies</span>
+                    <span>Connected</span>
+                  </div>
+                  <div className="stat-trend">
+                    <i className="fas fa-arrow-up"></i>
+                  </div>
+                </div>
+
+                <div className="stat-card">
+                  <div className="stat-info">
+                    <div className="stat-icon">
+                      <i className="fas fa-calendar"></i>
                     </div>
-                    <div className="status-dot yellow"></div>
+                    <div>
+                      <div className="stat-number">1951+</div>
+                      <div className="stat-desc">Appointments Scheduled</div>
+                    </div>
+                  </div>
+                  <div className="chart-mini">
+                    <div className="chart-bar"></div>
+                    <div className="chart-bar"></div>
+                    <div className="chart-bar"></div>
+                  </div>
+                </div>
+
+                <div className="stat-card success">
+                  <div className="success-number">6+</div>
+                  <div className="success-label">
+                    <span>Years of</span>
+                    <span>Experience</span>
+                  </div>
+                </div>
+
+                <div className="stat-card premium">
+                  <div className="premium-icon">
+                    <i className="fas fa-shield-alt"></i>
+                  </div>
+                  <div className="premium-text">
+                    <span>HIPAA Compliant</span>
+                    <span>Security & Performance</span>
+                    <span>Guaranteed</span>
                   </div>
                 </div>
               </div>
@@ -151,386 +134,315 @@ const Homepage = () => {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="features">
+      {/* Services Section */}
+      <section className="services" id="services">
         <div className="container">
-          <div className="section-header">
-            <div className="section-badge">
-              <i className="fas fa-bolt"></i>
-              Powerful Features
-            </div>
+          <div className="services-header">
             <h2 className="section-title">
-              Everything you need for
-              <span className="gradient-text">modern healthcare</span>
+              Efficient and Integrated
+              <span>Healthcare Services</span>
             </h2>
             <p className="section-description">
-              Discover how SwiftMeds revolutionizes medication management with cutting-edge technology and user-friendly design.
+              Simply operations with our AI-driven, quality-focused services
             </p>
           </div>
-          
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon">
-                <i className="fas fa-pills"></i>
+
+          <div className="services-grid">
+            <div className="service-card">
+              <div className="service-icon">
+                <i className="fas fa-cogs"></i>
               </div>
-              <h3 className="feature-title">Smart Medication Tracking</h3>
-              <p className="feature-description">
-                AI-powered medication management with automated refill alerts and comprehensive prescription history.
+              <h3 className="service-title">Prescription Management</h3>
+              <p className="service-description">
+                Automated prescription processing with real-time inventory management and delivery.
               </p>
-              <ul className="benefit-list">
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Automated refill reminders
-                </li>
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Drug interaction alerts
-                </li>
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Prescription history tracking
-                </li>
-              </ul>
-              <a href="#" className="feature-link">
-                Learn more <i className="fas fa-chevron-right"></i>
-              </a>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon">
-                <i className="fas fa-map-marker-alt"></i>
-              </div>
-              <h3 className="feature-title">Intelligent Pharmacy Network</h3>
-              <p className="feature-description">
-                Connect with verified pharmacies in real-time, check inventory, and compare prices instantly.
-              </p>
-              <ul className="benefit-list">
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Real-time inventory
-                </li>
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Price comparison
-                </li>
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Verified pharmacy network
-                </li>
-              </ul>
-              <a href="#" className="feature-link">
-                Learn more <i className="fas fa-chevron-right"></i>
-              </a>
-            </div>
-            
-            <div className="feature-card">
-              <div className="feature-icon">
-                <i className="fas fa-calendar-alt"></i>
-              </div>
-              <h3 className="feature-title">Advanced Reservation System</h3>
-              <p className="feature-description">
-                Schedule pickups, receive notifications, and manage appointments with seamless calendar integration.
-              </p>
-              <ul className="benefit-list">
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Smart scheduling
-                </li>
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Automated notifications
-                </li>
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Calendar sync integration
-                </li>
-              </ul>
-              <a href="#" className="feature-link">
-                Learn more <i className="fas fa-chevron-right"></i>
+              <a href="#" className="service-link">
+                <i className="fas fa-arrow-right"></i>
               </a>
             </div>
 
-            <div className="feature-card">
-              <div className="feature-icon">
-                <i className="fas fa-shield-alt"></i>
+            <div className="service-card">
+              <div className="service-icon">
+                <i className="fas fa-palette"></i>
               </div>
-              <h3 className="feature-title">HIPAA Compliant Security</h3>
-              <p className="feature-description">
-                Enterprise-grade security with end-to-end encryption and full HIPAA compliance for patient data protection.
+              <h3 className="service-title">Custom Healthcare Solutions</h3>
+              <p className="service-description">
+                Lorem ipsum dolor sit amet and consectetur adipiscing elit velit.
               </p>
-              <ul className="benefit-list">
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  End-to-end encryption
-                </li>
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  HIPAA compliant storage
-                </li>
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Multi-factor authentication
-                </li>
-              </ul>
-              <a href="#" className="feature-link">
-                Learn more <i className="fas fa-chevron-right"></i>
+              <a href="#" className="service-link">
+                <i className="fas fa-arrow-right"></i>
               </a>
             </div>
 
-            <div className="feature-card">
-              <div className="feature-icon">
-                <i className="fas fa-mobile-alt"></i>
+            <div className="service-card">
+              <div className="service-icon">
+                <i className="fas fa-search"></i>
               </div>
-              <h3 className="feature-title">Mobile-First Experience</h3>
-              <p className="feature-description">
-                Native mobile apps with offline capabilities and real-time sync across all your devices.
+              <h3 className="service-title">Quality Control</h3>
+              <p className="service-description">
+                Procedures and systems in place to ensure medication safety and efficacy.
               </p>
-              <ul className="benefit-list">
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Native iOS & Android apps
-                </li>
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Offline functionality
-                </li>
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Cross-device synchronization
-                </li>
-              </ul>
-              <a href="#" className="feature-link">
-                Learn more <i className="fas fa-chevron-right"></i>
+              <a href="#" className="service-link">
+                <i className="fas fa-arrow-right"></i>
               </a>
             </div>
 
-            <div className="feature-card">
-              <div className="feature-icon">
-                <i className="fas fa-chart-bar"></i>
+            <div className="service-card">
+              <div className="service-icon">
+                <i className="fas fa-lightbulb"></i>
               </div>
-              <h3 className="feature-title">Health Analytics Dashboard</h3>
-              <p className="feature-description">
-                Comprehensive health insights with medication adherence tracking and personalized health reports.
+              <h3 className="service-title">Technology and Innovation</h3>
+              <p className="service-description">
+                Staying on the latest trends with delivering technology driven outcomes.
               </p>
-              <ul className="benefit-list">
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Medication adherence tracking
-                </li>
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Health trend analysis
-                </li>
-                <li className="benefit-item">
-                  <i className="fas fa-check check-icon"></i>
-                  Personalized insights
-                </li>
-              </ul>
-              <a href="#" className="feature-link">
-                Learn more <i className="fas fa-chevron-right"></i>
+              <a href="#" className="service-link">
+                <i className="fas fa-arrow-right"></i>
+              </a>
+            </div>
+
+            <div className="service-card">
+              <div className="service-icon">
+                <i className="fas fa-refresh"></i>
+              </div>
+              <h3 className="service-title">Packaging and Logistics</h3>
+              <p className="service-description">
+                Packaging and logistics for shipping to anywhere in the nation!
+              </p>
+              <a href="#" className="service-link">
+                <i className="fas fa-arrow-right"></i>
+              </a>
+            </div>
+
+            <div className="service-card">
+              <div className="service-icon">
+                <i className="fas fa-chart-line"></i>
+              </div>
+              <h3 className="service-title">Consulting Market Research</h3>
+              <p className="service-description">
+                Services to help companies understand market needs and user behaviors.
+              </p>
+              <a href="#" className="service-link">
+                <i className="fas fa-arrow-right"></i>
               </a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section id="testimonials" className="testimonials">
+      {/* Benefits Section */}
+      <section className="benefits">
         <div className="container">
-          <div className="section-header">
-            <div className="section-badge">
-              <i className="fas fa-heart"></i>
-              Customer Stories
+          <div className="benefits-content">
+            <div className="benefits-visual">
+              <div className="chart-container">
+                <div className="chart-header">
+                  <h4>User Progress</h4>
+                  <span className="chart-period">MAY - JUN</span>
+                </div>
+                <div className="chart-stats">
+                  <div className="chart-bars">
+                    <div className="bar bar-1"></div>
+                    <div className="bar bar-2"></div>
+                    <div className="bar bar-3"></div>
+                    <div className="bar bar-4"></div>
+                    <div className="bar bar-5"></div>
+                  </div>
+                  <div className="chart-growth">
+                    <div className="growth-indicator">
+                      <i className="fas fa-arrow-up"></i>
+                      <span>1951+</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h2 className="section-title">
-              Loved by patients and healthcare providers
-            </h2>
-            <p className="section-description">
-              Join thousands of satisfied users who have transformed their healthcare experience with SwiftMeds.
-            </p>
-          </div>
-          
-          <div className="testimonial-container">
-            <div className="rating">
-              <i className="fas fa-star star"></i>
-              <i className="fas fa-star star"></i>
-              <i className="fas fa-star star"></i>
-              <i className="fas fa-star star"></i>
-              <i className="fas fa-star star"></i>
+
+            <div className="benefits-text">
+              <h2 className="section-title">
+                Key Benefits of Our System for
+                <span>Your Business Efficiency</span>
+              </h2>
+              <p className="section-description">
+                Our system ensures productivity, continuity, and faster service
+              </p>
+
+              <div className="benefits-list">
+                <div className="benefit-item">
+                  <div className="benefit-icon">
+                    <i className="fas fa-check"></i>
+                  </div>
+                  <div className="benefit-content">
+                    <h4>Boosting Quality with Tech</h4>
+                    <p>Streamlines med systems with advanced AI that automatically checks for drug interactions.</p>
+                  </div>
+                </div>
+
+                <div className="benefit-item">
+                  <div className="benefit-icon">
+                    <i className="fas fa-check"></i>
+                  </div>
+                  <div className="benefit-content">
+                    <h4>Optimization Production Process</h4>
+                    <p>Our system helps reduce waste and improve quality through smart analytics and reporting.</p>
+                  </div>
+                </div>
+
+                <div className="benefit-item">
+                  <div className="benefit-icon">
+                    <i className="fas fa-check"></i>
+                  </div>
+                  <div className="benefit-content">
+                    <h4>AI-Driven Production</h4>
+                    <p>Reducing risks and errors efficiency using AI algorithms that optimize medication delivery.</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            
-            <blockquote className="testimonial-quote">
-              "SwiftMeds has completely revolutionized how I manage my family's medications. The automated reminders and pharmacy network integration have saved us countless hours and eliminated missed doses."
-            </blockquote>
-            
-            <div className="testimonial-author">Dr. Sarah Johnson</div>
-            <div className="testimonial-role">Family Medicine Physician</div>
           </div>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="pricing">
+      <section className="pricing" id="pricing">
         <div className="container">
-          <div className="section-header">
-            <div className="section-badge">
-              <i className="fas fa-tag"></i>
-              Simple Pricing
-            </div>
+          <div className="pricing-header">
             <h2 className="section-title">
-              Choose the perfect plan for your needs
+              Tailored Plans for Your
+              <span>Healthcare Scale</span>
             </h2>
             <p className="section-description">
-              Transparent pricing with no hidden fees. Start free and upgrade as you grow.
+              Choose the plan that fits your needs perfectly
             </p>
           </div>
 
           <div className="pricing-grid">
             <div className="pricing-card">
-              <div className="pricing-header">
-                <h3 className="pricing-title">Basic</h3>
+              <div className="pricing-header-card">
+                <h3 className="pricing-title">Starter</h3>
+                <p className="pricing-description">
+                  The perfect way to get started and take yourself to the next level.
+                </p>
                 <div className="pricing-price">
                   <span className="currency">$</span>
-                  <span className="amount">0</span>
+                  <span className="amount">39</span>
                   <span className="period">/month</span>
                 </div>
-                <p className="pricing-description">Perfect for individuals</p>
+                <a href="../auth/signup" className="btn-outline">Get Started</a>
               </div>
               
-              <ul className="pricing-features">
-                <li className="pricing-feature">
-                  <i className="fas fa-check"></i>
-                  Up to 5 medications
-                </li>
-                <li className="pricing-feature">
-                  <i className="fas fa-check"></i>
-                  Basic refill reminders
-                </li>
-                <li className="pricing-feature">
-                  <i className="fas fa-check"></i>
-                  Pharmacy locator
-                </li>
-                <li className="pricing-feature">
-                  <i className="fas fa-check"></i>
-                  Mobile app access
-                </li>
-              </ul>
-              
-              <a href="#" className="btn-secondary">Start Free Trial</a>
-            </div>
-
-            <div className="pricing-card featured">
-              <div className="pricing-badge">Most Popular</div>
-              <div className="pricing-header">
-                <h3 className="pricing-title">Pro</h3>
-                <div className="pricing-price">
-                  <span className="currency">$</span>
-                  <span className="amount">19</span>
-                  <span className="period">/month</span>
-                </div>
-                <p className="pricing-description">Great for families</p>
+              <div className="pricing-features">
+                <h4>Features</h4>
+                <ul>
+                  <li><i className="fas fa-check"></i> Professional up to 15 Network per month</li>
+                  <li><i className="fas fa-check"></i> API Technical Support</li>
+                  <li><i className="fas fa-check"></i> Advance Analytics</li>
+                  <li><i className="fas fa-check"></i> Email onling guide</li>
+                </ul>
               </div>
-              
-              <ul className="pricing-features">
-                <li className="pricing-feature">
-                  <i className="fas fa-check"></i>
-                  Unlimited medications
-                </li>
-                <li className="pricing-feature">
-                  <i className="fas fa-check"></i>
-                  Advanced analytics
-                </li>
-                <li className="pricing-feature">
-                  <i className="fas fa-check"></i>
-                  Drug interaction alerts
-                </li>
-                <li className="pricing-feature">
-                  <i className="fas fa-check"></i>
-                  Priority support
-                </li>
-                <li className="pricing-feature">
-                  <i className="fas fa-check"></i>
-                  Family management
-                </li>
-              </ul>
-              
-              <a href="#" className="btn-primary">Get Started</a>
             </div>
 
             <div className="pricing-card">
-              <div className="pricing-header">
+              <div className="pricing-header-card">
                 <h3 className="pricing-title">Enterprise</h3>
+                <p className="pricing-description">
+                  The perfect way to take your pharmacy to an enterprise level organization.
+                </p>
                 <div className="pricing-price">
-                  <span className="amount">Custom</span>
+                  <span className="currency">$</span>
+                  <span className="amount">99</span>
+                  <span className="period">/month</span>
                 </div>
-                <p className="pricing-description">For healthcare providers</p>
+                <a href="../auth/signup" className="btn-outline">Get Started</a>
               </div>
               
-              <ul className="pricing-features">
-                <li className="pricing-feature">
-                  <i className="fas fa-check"></i>
-                  Custom integration
-                </li>
-                <li className="pricing-feature">
-                  <i className="fas fa-check"></i>
-                  Advanced security
-                </li>
-                <li className="pricing-feature">
-                  <i className="fas fa-check"></i>
-                  Dedicated support
-                </li>
-                <li className="pricing-feature">
-                  <i className="fas fa-check"></i>
-                  Custom reporting
-                </li>
-                <li className="pricing-feature">
-                  <i className="fas fa-check"></i>
-                  API access
-                </li>
-              </ul>
-              
-              <a href="#" className="btn-secondary">Contact Sales</a>
+              <div className="pricing-features">
+                <h4>Features</h4>
+                <ul>
+                  <li><i className="fas fa-check"></i> Unlimited pharmaceutical</li>
+                  <li><i className="fas fa-check"></i> Advance technical support</li>
+                  <li><i className="fas fa-check"></i> Advance Analytics</li>
+                  <li><i className="fas fa-check"></i> Business production optimization</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="pricing-card featured">
+              <div className="pricing-header-card">
+                <h3 className="pricing-title">Professional</h3>
+                <p className="pricing-description">
+                  Designed for professional scale healthcare providing team to better efficiency.
+                </p>
+                <a href="../auth/signup" className="btn-primary">Get Started</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Integration Section */}
+      <section className="integration">
+        <div className="container">
+          <div className="integration-content">
+            <div className="integration-text">
+              <h2 className="section-title">
+                Empowering Top Companies
+                <span>with Seamless Integrations</span>
+              </h2>
+              <p className="section-description">
+                Our unified platform is crafted to streamline operations, reduce costs, enhance efficiency, and promote sustainable practices across various business functions.
+              </p>
+              <a href="#" className="btn-primary">Start With Us</a>
+            </div>
+
+            <div className="integration-visual">
+              <div className="integration-map">
+                <div className="integration-point point-1">
+                  <div className="point-icon">
+                    <i className="fas fa-hospital"></i>
+                  </div>
+                </div>
+                <div className="integration-point point-2">
+                  <div className="point-icon">
+                    <i className="fas fa-pills"></i>
+                  </div>
+                </div>
+                <div className="integration-point point-3">
+                  <div className="point-icon">
+                    <i className="fas fa-user-md"></i>
+                  </div>
+                </div>
+                <div className="integration-point point-4">
+                  <div className="point-icon">
+                    <i className="fas fa-ambulance"></i>
+                  </div>
+                </div>
+                <div className="integration-point point-5">
+                  <div className="point-icon">
+                    <i className="fas fa-heartbeat"></i>
+                  </div>
+                </div>
+                <div className="integration-lines">
+                  <svg width="100%" height="100%" viewBox="0 0 400 300">
+                    <path d="M100,100 Q200,50 300,100" stroke="#10b981" strokeWidth="2" fill="none" opacity="0.6"/>
+                    <path d="M100,150 Q200,100 300,150" stroke="#10b981" strokeWidth="2" fill="none" opacity="0.6"/>
+                    <path d="M150,200 Q200,150 250,200" stroke="#10b981" strokeWidth="2" fill="none" opacity="0.6"/>
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="cta">
+      <section className="final-cta">
         <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">
-              Ready to transform your healthcare experience?
-            </h2>
-            <p className="section-description">
-              Join thousands of users who trust SwiftMeds for their medication management needs.
+          <div className="cta-content">
+            <h2 className="cta-title">From Idea to Production in Days</h2>
+            <p className="cta-description">
+              Contact us today to discover how our technology can transform your healthcare delivery approach.
             </p>
-          </div>
-          
-          <div className="cta-buttons">
-            <a href="#" className="btn-primary">
-              Start Free Trial
-              <i className="fas fa-arrow-right"></i>
-            </a>
-            <a href="#" className="btn-secondary">
-              <i className="fas fa-phone"></i>
-              Schedule Demo
-            </a>
-          </div>
-
-          <div className="trust-indicators">
-            <div className="trust-item">
-              <i className="fas fa-shield-alt"></i>
-              HIPAA Compliant
-            </div>
-            <div className="trust-item">
-              <i className="fas fa-lock"></i>
-              256-bit SSL Encryption
-            </div>
-            <div className="trust-item">
-              <i className="fas fa-award"></i>
-              SOC 2 Certified
-            </div>
+            <a href="#" className="btn-primary">Work With Us</a>
           </div>
         </div>
       </section>
@@ -538,56 +450,75 @@ const Homepage = () => {
       {/* Footer */}
       <footer className="footer">
         <div className="container">
-          <div className="footer-grid">
-            <div className="footer-column">
+          <div className="footer-content">
+            <div className="footer-main">
               <div className="footer-brand">
-                <div className="logo-icon">
-                  <i className="fas fa-pills"></i>
+                <div className="logo">
+                  <div className="logo-icon">
+                    <i className="fas fa-pills"></i>
+                  </div>
+                  <span className="logo-text">SwiftMeds</span>
                 </div>
-                <span className="logo-text">SwiftMeds</span>
+                <p className="footer-description">
+                  Our automated cloud distribution platform allows brands and retailers to accelerate their digital transformation.
+                </p>
               </div>
-              <p className="footer-description">
-                Revolutionary pharmacy management platform connecting patients, pharmacies, and healthcare providers.
-              </p>
+
+              <div className="footer-links">
+                <div className="footer-column">
+                  <h4>Company</h4>
+                  <ul>
+                    <li><a href="#">About Us</a></li>
+                    <li><a href="#">Leadership</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">News</a></li>
+                  </ul>
+                </div>
+
+                <div className="footer-column">
+                  <h4>Industries</h4>
+                  <ul>
+                    <li><a href="#">Precision Manufacturing</a></li>
+                    <li><a href="#">Food and Beverage</a></li>
+                    <li><a href="#">Automotive</a></li>
+                    <li><a href="#">Aerospace</a></li>
+                  </ul>
+                </div>
+
+                <div className="footer-column">
+                  <h4>Products</h4>
+                  <ul>
+                    <li><a href="#">Manufacturing Execution Systems</a></li>
+                    <li><a href="#">SCADA Solutions</a></li>
+                    <li><a href="#">Quality Management</a></li>
+                    <li><a href="#">Supply Chain Planning</a></li>
+                  </ul>
+                </div>
+
+                <div className="footer-column">
+                  <h4>Get In Touch</h4>
+                  <div className="contact-info">
+                    <p>Near Lycée Anguisa, Yaoundé<br/>Cameroon</p>
+                    <p>All Days - 10am to 6pm</p>
+                    <div className="social-links">
+                      <a href="#"><i className="fab fa-linkedin"></i></a>
+                      <a href="#"><i className="fab fa-twitter"></i></a>
+                      <a href="#"><i className="fab fa-facebook"></i></a>
+                      <a href="#"><i className="fab fa-instagram"></i></a>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="footer-column">
-              <h4 className="footer-title">Product</h4>
-              <ul className="footer-links">
-                <li><a href="#" className="footer-link">Features</a></li>
-                <li><a href="#" className="footer-link">Pricing</a></li>
-                <li><a href="#" className="footer-link">API</a></li>
-                <li><a href="#" className="footer-link">Integrations</a></li>
-              </ul>
-            </div>
-
-            <div className="footer-column">
-              <h4 className="footer-title">Company</h4>
-              <ul className="footer-links">
-                <li><a href="#" className="footer-link">About</a></li>
-                <li><a href="#" className="footer-link">Careers</a></li>
-                <li><a href="#" className="footer-link">Press</a></li>
-                <li><a href="#" className="footer-link">Contact</a></li>
-              </ul>
-            </div>
-
-            <div className="footer-column">
-              <h4 className="footer-title">Support</h4>
-              <ul className="footer-links">
-                <li><a href="#" className="footer-link">Help Center</a></li>
-                <li><a href="#" className="footer-link">Privacy Policy</a></li>
-                <li><a href="#" className="footer-link">Terms of Service</a></li>
-                <li><a href="#" className="footer-link">Status</a></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="footer-bottom">
-            <div className="footer-copyright">
-              © 2024 SwiftMeds. All rights reserved.
-            </div>
-            <div className="footer-meta">
-              Built with care for better healthcare
+            <div className="footer-bottom">
+              <div className="footer-legal">
+                <p>&copy; 2024 SwiftMeds. All rights reserved.</p>
+                <div className="footer-legal-links">
+                  <a href="#">Terms & Conditions</a>
+                  <a href="#">Privacy Policy</a>
+                </div>
+              </div>
             </div>
           </div>
         </div>

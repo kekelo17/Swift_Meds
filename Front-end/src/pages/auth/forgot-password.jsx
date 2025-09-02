@@ -91,7 +91,7 @@ const ForgotPassword = () => {
 
             <div className="auth-footer">
               <span>Remember your password?</span>
-              <Link to="/sign-in" className="auth-link">
+              <Link to="/auth/signin" className="auth-link">
                 Sign in
               </Link>
             </div>
