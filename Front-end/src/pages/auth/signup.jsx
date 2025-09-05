@@ -1,8 +1,5 @@
-// RoleSelection.jsx - Initial role selection component
-
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { PharmacyAuthService } from '../../../../Back-end/services/pharmacy_auth_service.js';
 import { 
   User, 
   Mail, 
@@ -19,9 +16,11 @@ import {
   Stethoscope,
   Pill,
   FileText,
-  Clock
+  Clock,
+  CheckCircle
 } from 'lucide-react';
 import '../CSS/auth.css';
+import { authAPI } from '../../api/apiClient.js';
 
 const RoleSelection = () => {
   const navigate = useNavigate();
@@ -36,7 +35,7 @@ const RoleSelection = () => {
       features: ['Search medications', 'Make reservations', 'Track orders', 'Find nearby pharmacies']
     },
     {
-      id: 'pharmacy',
+      id: 'pharmacist',
       title: 'Pharmacy Staff',
       description: 'I represent a pharmacy and want to manage inventory and reservations',
       icon: Building2,
@@ -119,8 +118,7 @@ const RoleSelection = () => {
   );
 };
 
-// ClientSignUp.jsx - Client-specific signup form
-
+// ClientSignUp.jsx - Updated with email field
 const ClientSignUp = () => {
   const [formData, setFormData] = useState({
     fullName: '',
@@ -134,21 +132,29 @@ const ClientSignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [lastAttempt, setLastAttempt] = useState(0);
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    // Clear errors when user starts typing
+    if (error) setError('');
+  };
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
 
     // Rate limiting
     const now = Date.now();
@@ -160,8 +166,21 @@ const ClientSignUp = () => {
     }
     setLastAttempt(now);
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    // Validation
+    if (!formData.fullName.trim()) {
+      setError('Full name is required');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      setError('Email address is required');
+      setLoading(false);
+      return;
+    }
+
+    if (!validateEmail(formData.email)) {
+      setError('Please enter a valid email address');
       setLoading(false);
       return;
     }
@@ -172,25 +191,47 @@ const ClientSignUp = () => {
       return;
     }
 
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    const signUpData = {
+      fullName: formData.fullName.trim(),
+      email: formData.email.trim().toLowerCase(),
+      phone: formData.phone.trim() || null,
+      dateOfBirth: formData.dateOfBirth || null,
+      address: formData.address.trim() || null,
+      password: formData.password,
+      role: 'client'
+    };
+
     try {
-      await PharmacyAuthService.signUp(formData.email, formData.password, {
-        fullName: formData.fullName,
-        phone: formData.phone,
-        dateOfBirth: formData.dateOfBirth,
-        address: formData.address,
-        role: 'client'
-      });
+      const response = await authAPI.signup(signUpData);
       
-      navigate('/auth/otp-verification', { 
-        state: { 
-          email: formData.email, 
-          message: 'Check your email for verification code',
-          role: 'client'
-        }
-      });
+      if (response.data.success) {
+        // Store auth data
+        localStorage.setItem('authToken', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        setSuccess('Account created successfully! Redirecting to dashboard...');
+        
+        // Redirect after 2 seconds
+        setTimeout(() => {
+          navigate('/dashboards/Client-dashboard', { 
+            replace: true,
+            state: { 
+              user: response.data.user,
+              message: 'Welcome to Swift Meds! Your account has been created successfully.'
+            }
+          });
+        }, 2000);
+      }
       
     } catch (err) {
-      setError(err.message || 'Failed to create account. Please try again.');
+      console.error('Signup error:', err);
+      setError(err.error || 'Failed to create account. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -218,6 +259,13 @@ const ClientSignUp = () => {
           </div>
         )}
 
+        {success && (
+          <div className="auth-success">
+            <CheckCircle className="h-5 w-5 text-green-500" />
+            <span>{success}</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-row">
             <div className="form-group">
@@ -239,7 +287,7 @@ const ClientSignUp = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Email *</label>
+              <label className="form-label">Email Address *</label>
               <div className="input-group">
                 <Mail className="input-icon" />
                 <input
@@ -247,7 +295,7 @@ const ClientSignUp = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="Enter your email"
+                  placeholder="Enter your email address"
                   required
                   className="form-input"
                 />
@@ -255,9 +303,9 @@ const ClientSignUp = () => {
             </div>
           </div>
 
-          <div className="form-row-split">
+          <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Phone</label>
+              <label className="form-label">Phone Number</label>
               <div className="input-group">
                 <Phone className="input-icon" />
                 <input
@@ -270,6 +318,9 @@ const ClientSignUp = () => {
                 />
               </div>
             </div>
+          </div>
+
+          <div className="form-row-split">
             <div className="form-group">
               <label className="form-label">Date of Birth</label>
               <div className="input-group">
@@ -283,9 +334,6 @@ const ClientSignUp = () => {
                 />
               </div>
             </div>
-          </div>
-
-          <div className="form-row">
             <div className="form-group">
               <label className="form-label">Address</label>
               <div className="input-group">
@@ -363,12 +411,11 @@ const ClientSignUp = () => {
   );
 };
 
-// PharmacySignUp.jsx - Pharmacy-specific signup form
-
+// PharmacySignUp.jsx - Updated with email field
 const PharmacySignUp = () => {
   const [formData, setFormData] = useState({
     pharmacyName: '',
-    ownerName: '',
+    fullName: '',
     email: '',
     phone: '',
     address: '',
@@ -380,6 +427,7 @@ const PharmacySignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [lastAttempt, setLastAttempt] = useState(0);
   const navigate = useNavigate();
 
@@ -388,12 +436,19 @@ const PharmacySignUp = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+    if (error) setError('');
+  };
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
 
     // Rate limiting
     const now = Date.now();
@@ -405,8 +460,21 @@ const PharmacySignUp = () => {
     }
     setLastAttempt(now);
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    // Validation
+    if (!formData.fullName.trim() || !formData.pharmacyName.trim()) {
+      setError('Full name and pharmacy name are required');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      setError('Email address is required');
+      setLoading(false);
+      return;
+    }
+
+    if (!validateEmail(formData.email)) {
+      setError('Please enter a valid email address');
       setLoading(false);
       return;
     }
@@ -417,28 +485,45 @@ const PharmacySignUp = () => {
       return;
     }
 
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    const signUpData = {
+      fullName: formData.fullName.trim(),
+      email: formData.email.trim().toLowerCase(),
+      phone: formData.phone.trim() || null,
+      address: formData.address.trim() || null,
+      password: formData.password,
+      role: 'pharmacist',
+      // Pharmacy-specific fields
+      pharmacyName: formData.pharmacyName.trim(),
+      licenseNumber: formData.licenseNumber.trim() || null,
+      operatingHours: formData.operatingHours.trim() || null
+    };
+
     try {
-      await PharmacyAuthService.signUp(formData.email, formData.password, {
-        pharmacyName: formData.pharmacyName,
-        ownerName: formData.ownerName,
-        phone: formData.phone,
-        address: formData.address,
-        licenseNumber: formData.licenseNumber,
-        operatingHours: formData.operatingHours,
-        role: 'pharmacy',
-        status: 'pending' // Pharmacy accounts need approval
-      });
+      const response = await authAPI.signup(signUpData);
       
-      navigate('/auth/otp-verification', { 
-        state: { 
-          email: formData.email, 
-          message: 'Check your email for verification code. Your pharmacy account will be reviewed for approval.',
-          role: 'pharmacy'
-        }
-      });
+      if (response.data.success) {
+        setSuccess(response.data.message);
+        
+        // Redirect to signin after 3 seconds for pharmacy accounts
+        setTimeout(() => {
+          navigate('/auth/signin', { 
+            state: { 
+              message: 'Pharmacy account created successfully! Please sign in. Your account is pending admin approval.',
+              type: 'success'
+            }
+          });
+        }, 3000);
+      }
       
     } catch (err) {
-      setError(err.message || 'Failed to create account. Please try again.');
+      console.error('Pharmacy signup error:', err);
+      setError(err.error || 'Failed to create pharmacy account. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -463,6 +548,13 @@ const PharmacySignUp = () => {
           <div className="auth-error">
             <AlertCircle className="h-5 w-5 text-red-500" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className="auth-success">
+            <CheckCircle className="h-5 w-5 text-green-500" />
+            <span>{success}</span>
           </div>
         )}
 
@@ -499,10 +591,10 @@ const PharmacySignUp = () => {
                 <User className="input-icon" />
                 <input
                   type="text"
-                  name="ownerName"
-                  value={formData.ownerName}
+                  name="fullName"
+                  value={formData.fullName}
                   onChange={handleInputChange}
-                  placeholder="Enter owner name"
+                  placeholder="Enter full name"
                   required
                   className="form-input"
                 />
@@ -512,7 +604,7 @@ const PharmacySignUp = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Email *</label>
+              <label className="form-label">Email Address *</label>
               <div className="input-group">
                 <Mail className="input-icon" />
                 <input
@@ -520,7 +612,7 @@ const PharmacySignUp = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="Enter pharmacy email"
+                  placeholder="Enter pharmacy email address"
                   required
                   className="form-input"
                 />
@@ -530,7 +622,7 @@ const PharmacySignUp = () => {
 
           <div className="form-row-split">
             <div className="form-group">
-              <label className="form-label">Phone *</label>
+              <label className="form-label">Phone Number *</label>
               <div className="input-group">
                 <Phone className="input-icon" />
                 <input
@@ -545,7 +637,7 @@ const PharmacySignUp = () => {
               </div>
             </div>
             <div className="form-group">
-              <label className="form-label">License Number *</label>
+              <label className="form-label">License Number</label>
               <div className="input-group">
                 <FileText className="input-icon" />
                 <input
@@ -554,7 +646,6 @@ const PharmacySignUp = () => {
                   value={formData.licenseNumber}
                   onChange={handleInputChange}
                   placeholder="Pharmacy license number"
-                  required
                   className="form-input"
                 />
               </div>

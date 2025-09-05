@@ -42,8 +42,10 @@ const App = () => {
         {/* Protected routes */}
         <Route 
           path="/Dashboard-Route" 
-          element={user ? <DashboardRouter /> : <Navigate to="/auth/signin" />} 
+          element={user ? <Navigate to="/" /> : <Navigate to="/auth/signin" />} 
         />
+
+        { user }
         
         {/* Fallback route */}
         <Route path="*" element={<Navigate to={user ? "/Dashboard-Route" : "/"} />} />

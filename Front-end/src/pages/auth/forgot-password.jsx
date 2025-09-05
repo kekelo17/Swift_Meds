@@ -23,7 +23,7 @@ const ForgotPassword = () => {
     setSuccess(false);
 
     try {
-      const { error } = await PharmacyAuthService.resetPassword(email);
+      const { error } = await PharmacyAuthService.updatePassword(email);
       if (error) throw error;
       setSuccess(true);
     } catch (err) {

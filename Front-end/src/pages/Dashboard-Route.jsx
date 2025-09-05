@@ -40,7 +40,7 @@ const DashboardRouter = () => {
         <Route 
           path="/dashboards/Client-dashboard" 
           element={
-            <ProtectedRoute requiredRole={["client", "customer"]}>
+            <ProtectedRoute requiredRole={["client"]}>
               <ClientDashboard />
             </ProtectedRoute>
           } 

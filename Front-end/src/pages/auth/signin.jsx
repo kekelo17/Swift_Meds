@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { PharmacyAuthService } from '../../../../Back-end/services/pharmacy_auth_service.js';
 import { 
   Mail, 
   Lock, 
@@ -13,6 +12,7 @@ import {
   Pill
 } from 'lucide-react';
 import '../CSS/auth.css';
+import { authAPI } from '../../api/apiClient.js';
 
 const SignIn = () => {
   const [email, setEmail] = useState('');
@@ -47,14 +47,18 @@ const SignIn = () => {
     switch (userRole?.toLowerCase()) {
       case 'admin':
         return '/dashboards/Admin-dashboard';
-      case 'pharmacy':
+      case 'pharmacist':
         return '/dashboards/Pharmacy-dashboard';
       case 'client':
-      case 'customer':
         return '/dashboards/Client-dashboard';
       default:
-        return '/dashboards/Client-dashboard'; // Default to client dashboard
+        return '/dashboards/Client-dashboard';
     }
+  };
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   const handleSubmit = async (e) => {
@@ -62,33 +66,57 @@ const SignIn = () => {
     setLoading(true);
     setError('');
 
+    if (!email.trim() || !password) {
+      setError('Email address and password are required');
+      setLoading(false);
+      return;
+    }
+
+    if (!validateEmail(email.trim())) {
+      setError('Please enter a valid email address');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await PharmacyAuthService.signIn(email, password);
-      
-      if (response.error) {
-        throw new Error(response.error.message || 'Failed to sign in');
-      }
-
-      // Get user data and role from the response
-      const userData = response.data?.user || response.user;
-      const userRole = userData?.user_metadata?.role || 
-                      userData?.role || 
-                      userData?.app_metadata?.role ||
-                      'client'; // Default role
-
-      // Navigate to appropriate dashboard based on role
-      const dashboardRoute = getDashboardRoute(userRole);
-      navigate(dashboardRoute, { 
-        replace: true,
-        state: { 
-          user: userData,
-          role: userRole 
-        }
+      const response = await authAPI.signin({
+        identifier: email.trim().toLowerCase(),
+        password: password
       });
+      
+      if (response.data.success) {
+        // Store auth data in localStorage
+        localStorage.setItem('authToken', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        const userRole = response.data.user.role;
+        const dashboardRoute = getDashboardRoute(userRole);
+        
+        // Check if pharmacist account is approved
+        if (userRole === 'pharmacist' && response.data.user.roleData?.pharmacy?.status === 'pending') {
+          navigate(dashboardRoute, { 
+            replace: true,
+            state: { 
+              user: response.data.user,
+              message: 'Your pharmacy account is pending admin approval. Some features may be limited.',
+              type: 'info'
+            }
+          });
+        } else {
+          navigate(dashboardRoute, { 
+            replace: true,
+            state: { 
+              user: response.data.user,
+              message: `Welcome back, ${response.data.user.full_name}!`,
+              type: 'success'
+            }
+          });
+        }
+      }
 
     } catch (err) {
       console.error('Sign in error:', err);
-      setError(err.message || 'Failed to sign in. Please check your credentials.');
+      setError(err.error || 'Failed to sign in. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -160,18 +188,21 @@ const SignIn = () => {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label className="form-label">Email</label>
+            <label className="form-label">Email Address</label>
             <div className="input-group">
               <Mail className="input-icon" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder="Enter your email address"
                 required
                 className="form-input"
               />
             </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Use the email address you registered with
+            </p>
           </div>
 
           <div className="form-group">
@@ -222,6 +253,15 @@ const SignIn = () => {
             Create an account
           </button>
         </form>
+
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-600">
+            Having trouble? Contact support at{' '}
+            <a href="mailto:support@swiftmeds.com" className="text-blue-600 hover:underline">
+              support@swiftmeds.com
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
