@@ -9,7 +9,6 @@ import {
   Clock,
   Shield
 } from 'lucide-react';
-import '../CSS/auth.css';
 
 const OtpVerification = () => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -65,10 +64,8 @@ const OtpVerification = () => {
     // Handle backspace
     if (e.key === 'Backspace') {
       if (!otp[index] && index > 0) {
-        // Move to previous input if current is empty
         otpRefs.current[index - 1]?.focus();
       } else {
-        // Clear current input
         const newOtp = [...otp];
         newOtp[index] = '';
         setOtp(newOtp);
@@ -92,46 +89,25 @@ const OtpVerification = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
-    const otpCode = otp.join('');
-    if (otpCode.length !== 6) {
-      setError('Please enter the complete 6-digit code');
-      setLoading(false);
-      return;
-    }
+    setSuccess('');
 
     try {
-      const response = await PharmacyAuthService.verifyOtp(email, otpCode);
+      const otpCode = otp.join('');
+      const result = await PharmacyAuthService.verifyEmail(otpCode, role);
       
-      if (response.error) {
-        throw new Error(response.error.message || 'Verification failed');
+      if (result.success) {
+        setSuccess('Email verified successfully!');
+        // Navigate based on role
+        setTimeout(() => {
+          navigate(getDashboardRoute(role), { 
+            state: { message: 'Email verified successfully!' }
+          });
+        }, 2000);
+      } else {
+        setError(result.message || 'Invalid OTP code');
       }
-
-      setSuccess('Email verified successfully!');
-      
-      // Navigate based on role with different messages
-      setTimeout(() => {
-        if (role === 'pharmacy') {
-          // Pharmacy accounts need approval
-          navigate('/auth/signin', {
-            state: {
-              message: 'Email verified! Your pharmacy account is pending admin approval. You will be notified once approved.',
-              type: 'info'
-            }
-          });
-        } else {
-          // Client accounts can sign in immediately
-          navigate('/auth/signin', {
-            state: {
-              message: 'Email verified successfully! You can now sign in.',
-              type: 'success'
-            }
-          });
-        }
-      }, 2000);
-      
     } catch (err) {
-      setError(err.message || 'Verification failed. Please try again.');
+      setError(err.message || 'Failed to verify OTP');
     } finally {
       setLoading(false);
     }
@@ -140,12 +116,17 @@ const OtpVerification = () => {
   const handleResend = async () => {
     setResendLoading(true);
     setError('');
-    
+    setSuccess('');
+
     try {
-      await PharmacyAuthService.resendOtp(email);
-      setSuccess('Verification code resent successfully!');
-      setCanResend(false);
-      setCountdown(60);
+      const result = await PharmacyAuthService.resendVerification(email);
+      if (result.success) {
+        setSuccess('Verification code resent successfully!');
+        setCountdown(60);
+        setCanResend(false);
+      } else {
+        setError(result.message || 'Failed to resend code');
+      }
     } catch (err) {
       setError(err.message || 'Failed to resend code');
     } finally {
@@ -153,62 +134,62 @@ const OtpVerification = () => {
     }
   };
 
-  // Redirect if no email in state
-  if (!email) {
-    return (
-      <Navigate to="/auth/signup" replace />
-    );
-  }
+  const getDashboardRoute = (userRole) => {
+    switch (userRole.toLowerCase()) {
+      case 'admin':
+        return '/dashboards/Admin-Dashboard';
+      case 'pharmacist':
+        return '/dashboards/Pharmacy-Dashboard';
+      case 'client':
+      default:
+        return '/dashboards/Client-Dashboard';
+    }
+  };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-white px-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 relative overflow-hidden transform transition-all duration-300 hover:shadow-2xl">
         <button 
-          onClick={() => navigate(-1)} 
-          className="back-button"
+          onClick={() => navigate('/auth/signup')} 
+          className="absolute top-6 left-6 text-gray-600 hover:text-green-600 transition-colors"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-6 w-6" />
         </button>
 
-        <div className="auth-header">
-          <div className="verification-icon">
-            <Mail className="h-12 w-12 text-blue-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900">Verify Your Email</h2>
-          <p className="text-gray-600 mb-2">{message}</p>
-          <p className="text-sm text-gray-500">
-            We sent a 6-digit code to <strong>{email}</strong>
+        <div className="text-center mb-10">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Verify Your Email</h2>
+          <p className="text-gray-600 text-lg">{message}</p>
+          <p className="text-sm text-gray-500 mt-2">
+            We've sent a 6-digit code to <strong className="text-gray-900">{email}</strong>
           </p>
         </div>
 
         {role === 'pharmacy' && (
-          <div className="approval-notice mb-4">
-            <div className="approval-icon">
-              <Shield className="h-5 w-5 text-amber-500" />
-            </div>
+          <div className="flex items-start bg-amber-50 text-amber-700 p-4 rounded-xl mb-6 animate-fade-in">
+            <Shield className="h-5 w-5 text-amber-500 mr-3 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm text-amber-700 font-medium">Pending Approval</p>
-              <p className="text-xs text-amber-600">After verification, your pharmacy account will be reviewed by our admin team.</p>
+              <p className="text-sm font-medium">Pending Approval</p>
+              <p className="text-xs">After verification, your pharmacy account will be reviewed by our admin team.</p>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="auth-error">
-            <AlertCircle className="h-5 w-5 text-red-500" />
-            <span>{error}</span>
+          <div className="flex items-center bg-red-50 text-red-600 p-4 rounded-xl mb-6 animate-fade-in">
+            <AlertCircle className="h-5 w-5 mr-3" />
+            <span className="text-sm">{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="auth-success">
-            <CheckCircle className="h-5 w-5 text-green-500" />
-            <span>{success}</span>
+          <div className="flex items-center bg-green-50 text-green-600 p-4 rounded-xl mb-6 animate-fade-in">
+            <CheckCircle className="h-5 w-5 mr-3" />
+            <span className="text-sm">{success}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="otp-input-group">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="flex justify-between gap-3">
             {otp.map((digit, index) => (
               <input
                 key={index}
@@ -218,7 +199,7 @@ const OtpVerification = () => {
                 value={digit}
                 onChange={(e) => handleOtpChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                className="otp-input"
+                className="w-full h-14 text-center text-2xl font-bold border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all duration-200 disabled:opacity-50 bg-white"
                 disabled={loading}
               />
             ))}
@@ -227,30 +208,26 @@ const OtpVerification = () => {
           <button
             type="submit"
             disabled={loading || otp.some(digit => !digit)}
-            className="auth-button"
+            className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-200 disabled:opacity-75 shadow-md hover:shadow-lg"
           >
             {loading ? 'Verifying...' : 'Verify Email'}
           </button>
 
-          <div className="resend-section">
-            <p className="text-sm text-gray-600 text-center">
-              Didn't receive the code?
-            </p>
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-3">Didn't receive the code?</p>
             {canResend ? (
               <button
                 type="button"
                 onClick={handleResend}
                 disabled={resendLoading}
-                className="resend-button"
+                className="text-green-600 hover:text-green-700 font-medium underline-offset-2 transition-colors disabled:opacity-50"
               >
                 {resendLoading ? 'Sending...' : 'Resend Code'}
               </button>
             ) : (
-              <div className="countdown">
-                <Clock className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-500">
-                  Resend in {countdown}s
-                </span>
+              <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                <Clock className="h-4 w-4" />
+                <span>Resend in {countdown}s</span>
               </div>
             )}
           </div>

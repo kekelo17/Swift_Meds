@@ -2,7 +2,7 @@
 import express from 'express';
 
 const app = express();
-const PORT = 5000;
+const PORT = 5001;
 
 // Only basic routes - no imports
 app.get('/', (req, res) => res.json({ message: 'Test OK' }));

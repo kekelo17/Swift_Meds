@@ -8,31 +8,31 @@ const QuickStatsModal = ({ show, onClose, stats }) => {
     switch (userType) {
       case 'admin':
         return [
-          { icon: icons.Users, label: "Total Users:", value: stats.totalUsers || 0, color: "blue" },
+          { icon: icons.Users, label: "Total Users:", value: stats.totalUsers || 0, color: "green" },
           { icon: icons.Building2, label: "Pharmacies:", value: stats.totalPharmacies || 0, color: "green" },
           { icon: icons.Clock, label: "Pending Approvals:", value: stats.pendingApprovals || 0, color: "yellow" },
-          { icon: icons.Calendar, label: "Total Reservations:", value: stats.totalReservations || 0, color: "purple" }
+          { icon: icons.Calendar, label: "Total Reservations:", value: stats.totalReservations || 0, color: "green" }
         ];
-      case 'pharmacy':
+      case 'pharmacist':
         return [
-          { icon: icons.Calendar, label: "Total Reservations:", value: stats.total || 0, color: "blue" },
+          { icon: icons.Calendar, label: "Total Reservations:", value: stats.total || 0, color: "green" },
           { icon: icons.CheckCircle, label: "Confirmed Today:", value: stats.confirmed || 0, color: "green" },
           { icon: icons.Clock, label: "Pending:", value: stats.pending || 0, color: "yellow" },
-          { icon: icons.Package, label: "Inventory Items:", value: stats.inventory || 0, color: "teal" }
+          { icon: icons.Package, label: "Inventory Items:", value: stats.inventory || 0, color: "green" }
         ];
       default: // client
         return [
-          { icon: icons.Calendar, label: "My Reservations:", value: stats.total || 0, color: "blue" },
+          { icon: icons.Calendar, label: "My Reservations:", value: stats.total || 0, color: "green" },
           { icon: icons.CheckCircle, label: "Confirmed:", value: stats.confirmed || 0, color: "green" },
           { icon: icons.Clock, label: "Pending:", value: stats.pending || 0, color: "yellow" },
-          { icon: icons.Building2, label: "Favorite Pharmacies:", value: stats.favorites || 0, color: "teal" }
+          { icon: icons.Building2, label: "Favorite Pharmacies:", value: stats.favorites || 0, color: "green" }
         ];
     }
   };
 
   // Determine user type from stats or context
   const userType = stats.totalUsers !== undefined ? 'admin' : 
-                   stats.inventory !== undefined ? 'pharmacy' : 'client';
+                   stats.inventory !== undefined ? 'pharmacist' : 'client';
   
   const statsToShow = getStatsForUser(userType);
 

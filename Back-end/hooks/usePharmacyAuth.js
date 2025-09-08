@@ -1,73 +1,8 @@
-/*import React from 'react';
-import { PharmacyAuthService } from '../services/pharmacy_auth_service.js';
-
-export const usePharmacyAuth = () => {
-  const [user, setUser] = React.useState(null);
-  const [profile, setProfile] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      try {
-        const session = await PharmacyAuthService.getSession();
-        setUser(session?.user || null);
-        
-        if (session?.user) {
-          const userProfile = await PharmacyAuthService.getCurrentUserProfile();
-          setProfile(userProfile);
-        }
-      } catch (error) {
-        console.error('Error getting initial session:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getInitialSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = PharmacyAuthService.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user || null);
-        
-        if (session?.user) {
-          try {
-            const userProfile = await PharmacyAuthService.getCurrentUserProfile();
-            setProfile(userProfile);
-          } catch (error) {
-            console.error('Error fetching user profile:', error);
-            setProfile(null);
-          }
-        } else {
-          setProfile(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, []);
-
-  return {
-    user,
-    profile,
-    loading,
-    signIn: PharmacyAuthService.signIn,
-    signUp: PharmacyAuthService.signUp,
-    signOut: PharmacyAuthService.signOut,
-    hasRole: PharmacyAuthService.hasRole,
-    isAdmin: PharmacyAuthService.isAdmin,
-    isPharmacyStaff: PharmacyAuthService.isPharmacyStaff
-  };
-};*/
 // hooks/usePharmacyAuth.js
 import { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
 import { authAPI } from '../../Front-end/src/api/apiClient.js';
+import { useNavigate } from "react-router-dom";
 
 export const usePharmacyAuth = () => {
   const [user, setUser] = useState(null);
@@ -96,8 +31,8 @@ export const usePharmacyAuth = () => {
       'admin': 3
     };
     
-    const userRoleLevel = roleHierarchy[user.role] || 0;
-    const requiredRoleLevel = roleHierarchy[requiredRole] || 0;
+    const userRoleLevel = roleHierarchy[user.role?.toLowerCase()] || 0;
+    const requiredRoleLevel = roleHierarchy[requiredRole?.toLowerCase()] || 0;
     
     return userRoleLevel >= requiredRoleLevel;
   };
@@ -171,34 +106,68 @@ export const usePharmacyAuth = () => {
   };
 
   // Sign out function
+  const clearAuthData = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("authToken");
+  };
+
+  
+  const navigate = useNavigate();
+  
   const signOut = async () => {
     try {
       setError(null);
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
-      setUser(null);
-      setProfile(null);
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      
+  
+      clearAuthData();
+      navigate('/auth/signin');
       return true;
     } catch (error) {
       setError(error.message);
       throw error;
     }
   };
+  
 
   useEffect(() => {
-    // Get initial session
+    // Check for existing user in localStorage first
+    const checkExistingSession = () => {
+      const storedUser = localStorage.getItem('user');
+      const storedToken = localStorage.getItem('authToken');
+      
+      if (storedUser && storedToken) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          setLoading(false);
+          return true;
+        } catch (error) {
+          console.error('Error parsing stored user:', error);
+          localStorage.removeItem('user');
+          localStorage.removeItem('authToken');
+        }
+      }
+      return false;
+    };
+
+    // If we found a stored session, don't need to check Supabase
+    if (checkExistingSession()) {
+      return;
+    }
+
+    // Get initial session from Supabase
     const getInitialSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
           const customUser = await getCustomUserProfile(session.user.id);
-          setUser(customUser);
-          localStorage.setItem('user', JSON.stringify(customUser));
+          if (customUser) {
+            setUser(customUser);
+            localStorage.setItem('user', JSON.stringify(customUser));
+            localStorage.setItem('authToken', session.access_token);
+          }
         }
       } catch (error) {
         console.error('Error getting initial session:', error);
@@ -213,19 +182,25 @@ export const usePharmacyAuth = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
+        
         if (session?.user) {
           try {
             const customUser = await getCustomUserProfile(session.user.id);
-            setUser(customUser);
-            localStorage.setItem('user', JSON.stringify(customUser));
+            if (customUser) {
+              setUser(customUser);
+              localStorage.setItem('user', JSON.stringify(customUser));
+              localStorage.setItem('authToken', session.access_token);
+            }
           } catch (error) {
             console.error('Error fetching user profile:', error);
             setUser(null);
             setError(error.message);
+            clearAuthData();
           }
         } else {
           setUser(null);
-          localStorage.removeItem('user');
+          clearAuthData();
         }
         
         setLoading(false);

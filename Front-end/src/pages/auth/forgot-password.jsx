@@ -7,7 +7,6 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
-import '../CSS/auth.css';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -34,18 +33,18 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-white px-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 relative overflow-hidden transform transition-all duration-300 hover:shadow-2xl">
         <button 
           onClick={() => navigate(-1)} 
-          className="back-button"
+          className="absolute top-6 left-6 text-gray-600 hover:text-green-600 transition-colors"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-6 w-6" />
         </button>
 
-        <div className="auth-header">
-          <h2 className="text-2xl font-bold text-gray-900">Reset Password</h2>
-          <p className="text-gray-600">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Reset Password</h2>
+          <p className="text-gray-600 text-lg">
             {success 
               ? 'Check your email for a password reset link' 
               : 'Enter your email to receive a reset link'}
@@ -53,30 +52,30 @@ const ForgotPassword = () => {
         </div>
 
         {error && (
-          <div className="auth-error">
-            <AlertCircle className="h-5 w-5 text-red-500" />
-            <span>{error}</span>
+          <div className="flex items-center bg-red-50 text-red-600 p-4 rounded-xl mb-6 animate-fade-in">
+            <AlertCircle className="h-5 w-5 mr-3" />
+            <span className="text-sm">{error}</span>
           </div>
         )}
 
         {success ? (
-          <div className="auth-success">
-            <CheckCircle className="h-5 w-5 text-green-500" />
-            <span>Password reset email sent successfully!</span>
+          <div className="flex items-center bg-green-50 text-green-600 p-4 rounded-xl mb-6 animate-fade-in">
+            <CheckCircle className="h-5 w-5 mr-3" />
+            <span className="text-sm">Password reset email sent successfully!</span>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group">
-              <label className="form-label">Email</label>
-              <div className="input-group">
-                <Mail className="input-icon" />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
-                  className="form-input"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
                 />
               </div>
             </div>
@@ -84,14 +83,14 @@ const ForgotPassword = () => {
             <button
               type="submit"
               disabled={loading}
-              className="auth-button"
+              className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-200 disabled:opacity-75 shadow-md hover:shadow-lg"
             >
               {loading ? 'Sending...' : 'Send Reset Link'}
             </button>
 
-            <div className="auth-footer">
-              <span>Remember your password?</span>
-              <Link to="/auth/signin" className="auth-link">
+            <div className="text-center text-sm text-gray-600">
+              Remember your password?{' '}
+              <Link to="/auth/signin" className="text-green-600 hover:text-green-700 font-medium underline-offset-2">
                 Sign in
               </Link>
             </div>

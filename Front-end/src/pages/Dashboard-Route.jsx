@@ -1,62 +1,53 @@
+// Dashboard-Route.jsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { RoleSelection, ClientSignUp, PharmacySignUp } from './auth/signup';
-import SignIn from './auth/signin';
-import OtpVerification from './auth/otp-verification';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './Protected-Route';
 import AdminDashboard from './dashboards/Admin-Dashboard';
 import ClientDashboard from './dashboards/Client-Dashboard';
 import PharmacyDashboard from './dashboards/Pharmacy-Dashboard';
 
+const DashboardRouter = ({ userRole }) => {
+  // Helper function to get the default route based on user role
+  const getDefaultRoute = () => {
+    switch (userRole?.toLowerCase()) {
+      case 'admin':
+        return '/dashboards/Admin-Dashboard';
+      case 'pharmacist':
+        return '/dashboards/Pharmacy-Dashboard  ';
+      case 'client':
+      default:
+        return '/dashboards/Client-Dashboard';
+    }
+  };
 
-const DashboardRouter = () => {
   return (
-    <Router>
-      <Routes>
-        {/* Authentication Routes */}
-        <Route path="/auth/signup" element={<RoleSelection />} />
-        <Route path="/auth/signup/client" element={<ClientSignUp />} />
-        <Route path="/auth/signup/pharmacy" element={<PharmacySignUp />} />
-        <Route path="/auth/signin" element={<SignIn />} />
-        <Route path="/auth/otp-verification" element={<OtpVerification />} />
-        
-        {/* Dashboard Routes - Protected */}
-        <Route 
-          path="/dashboards/Admin-dashboard" 
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/dashboards/Pharmacy-dashboard" 
-          element={
-            <ProtectedRoute requiredRole="pharmacy">
-              <PharmacyDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/dashboards/Client-dashboard" 
-          element={
-            <ProtectedRoute requiredRole={["client"]}>
-              <ClientDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Default Redirects */}
-        <Route path="/" element={<Navigate to="/auth/signin" replace />} />
-        <Route path="/signup" element={<Navigate to="/auth/signup" replace />} />
-        <Route path="/signin" element={<Navigate to="/auth/signin" replace />} />
-        
-        {/* Catch all route */}
-        <Route path="*" element={<Navigate to="/auth/signin" replace />} />
-      </Routes>
-    </Router>
+    <Routes>
+      {/* Admin Dashboard */}
+      <Route path="admin" element={
+        <ProtectedRoute requiredRole="admin">
+          <AdminDashboard />
+        </ProtectedRoute>
+      } />
+      
+      {/* Pharmacist Dashboard */}
+      <Route path="pharmacist" element={
+        <ProtectedRoute requiredRole="pharmacist">
+          <PharmacyDashboard />
+        </ProtectedRoute>
+      } />
+      
+      {/* Client Dashboard */}
+      <Route path="client" element={
+        <ProtectedRoute requiredRole="client">
+          <ClientDashboard />
+        </ProtectedRoute>
+      } />
+      
+      {/* Default route - redirect to user's appropriate dashboard */}
+      <Route path="" element={<Navigate to={getDefaultRoute()} replace />} />
+      <Route path="*" element={<Navigate to={getDefaultRoute()} replace />} />
+    </Routes>
   );
-}
-;
+}; 
 
 export default DashboardRouter;

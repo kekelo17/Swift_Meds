@@ -1,10 +1,11 @@
+// Protected-Route.jsx
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { usePharmacyAuth } from '../../../Back-end/hooks/usePharmacyAuth';
 import { Loader2 } from 'lucide-react';
 
 const ProtectedRoute = ({ children, requiredRole = null }) => {
-  const { user, profile, loading } = usePharmacyAuth();
+  const { user, loading } = usePharmacyAuth();
   const location = useLocation();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
@@ -21,12 +22,10 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
         return;
       }
 
-      // Get user role from multiple possible sources
-      const userRole = user?.user_metadata?.role || 
-                      user?.role || 
-                      user?.app_metadata?.role ||
-                      profile?.role ||
-                      'client'; // Default role
+      // Get user role from the user object
+      const userRole = user?.role ; // Default role
+
+      console.log('ProtectedRoute - User role:', userRole, 'Required role:', requiredRole);
 
       // Check if user has required role
       if (requiredRole) {
@@ -36,6 +35,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
         );
         
         setIsAuthorized(hasRequiredRole);
+        console.log('ProtectedRoute - Has required role:', hasRequiredRole);
       } else {
         // No specific role required, just need to be authenticated
         setIsAuthorized(true);
@@ -45,7 +45,7 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     };
 
     checkAuthorization();
-  }, [user, profile, loading, requiredRole]);
+  }, [user, loading, requiredRole]);
 
   // Show loading spinner while checking auth
   if (loading || authLoading) {
@@ -64,7 +64,11 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     return (
       <Navigate 
         to="/auth/signin" 
-        state={{ from: location }} 
+        state={{ 
+          from: location,
+          message: 'Please sign in to access this page',
+          type: 'info'
+        }} 
         replace 
       />
     );
@@ -72,29 +76,30 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
 
   // Redirect to appropriate dashboard if user doesn't have required role
   if (!isAuthorized) {
-    const userRole = user?.user_metadata?.role || 
-                    user?.role || 
-                    user?.app_metadata?.role ||
-                    'client';
+    const userRole = user?.role || 'client';
     
-    let redirectPath = '/dashboards/Client-dashboard'; // Default
+    let redirectPath = '/dashboards/client'; // Default
     
     switch (userRole.toLowerCase()) {
       case 'admin':
-        redirectPath = '/dashboards/Admin-dashboard';
+        redirectPath = '/dashboards/Admin-Dashboard';
         break;
-      case 'pharmacy':
-        redirectPath = '/dashboards/Pharmacy-dashboard';
+      case 'pharmacist':
+        redirectPath = '/dashboards/Pharmacy-Dashboard';
         break;
       case 'client':
-      case 'customer':
-        redirectPath = '/dashboards/Client-dashboard';
+      default:
+        redirectPath = '/dashboards/Client-Dashboard';
         break;
     }
     
     return (
       <Navigate 
-        to={redirectPath} 
+        to={redirectPath}
+        state={{
+          message: `Access denied. You don't have permission to access this page.`,
+          type: 'error'
+        }}
         replace 
       />
     );

@@ -3,6 +3,7 @@ import * as icons from 'lucide-react';
 import ProfileDropdown from './ProfileDropdown';
 import QuickStatsModal from './QuickStatsModal';
 
+
 const Navbar = ({ user, profile, signOut, admin = false }) => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showQuickStats, setShowQuickStats] = useState(false);
@@ -20,10 +21,10 @@ const Navbar = ({ user, profile, signOut, admin = false }) => {
       let stats;
       if (admin) {
         stats = await PharmacyDatabaseService.getAdminStats();
-      } else if (user?.role === 'pharmacy') {
-        stats = await PharmacyDatabaseService.getPharmacyStats(user.id);
+      } else if (user?.role === 'pharmacist') {
+        stats = await PharmacyDatabaseService.getPharmacyStats(profile?.pharmacy_id);
       } else {
-        stats = await PharmacyDatabaseService.getClientStats(user.id);
+        stats = await PharmacyDatabaseService.getReservationStats(user.id);
       }
       setStatsData(stats);
     } catch (error) {
@@ -60,7 +61,7 @@ const Navbar = ({ user, profile, signOut, admin = false }) => {
                     <icons.User className="h-5 w-5 text-green-600" />
                   </div>
                   <div className="hidden md:block text-left">
-                    <div className="text-sm font-medium">{profile?.fullName || user.email}</div>
+                    <div className="text-sm font-medium">{user?.full_name || user.email}</div>
                     <div className="text-xs text-gray-500 capitalize">{user?.role || 'user'}</div>
                   </div>
                   <icons.ChevronDown className="h-4 w-4" />

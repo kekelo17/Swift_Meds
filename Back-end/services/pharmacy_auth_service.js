@@ -14,11 +14,10 @@ export class PharmacyAuthService {
   
   static async signUp(userData) {
     try {
-      // Step 1: Create a user in Supabase Authentication
-      // This is crucial and cannot be skipped. It handles secure password hashing
-      // and creates the user's session.
+      // Step 1: Create a user in Supabase Authentication.
+      // Supabase handles the password hashing and user session management.
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: userData.email, // Use email for auth signup
+        email: userData.email, 
         password: userData.password,
         options: {
           data: {
@@ -29,21 +28,18 @@ export class PharmacyAuthService {
       });
       
       if (authError) {
-        // Handle specific auth errors like email already exists
-        if (authError.message.includes('already registered')) {
-          throw new Error('An account with this email already exists.');
-        }
         throw authError;
       }
 
+      // Supabase will automatically create a user in auth.users and return the user object.
       const userId = authData.user.id;
       const userEmail = authData.user.email;
 
-      // Step 2: Use the new user ID to create a profile in your 'users' table
+      // Step 2: Use the newly created user's ID to create a profile in your 'users' table.
       const { data: userRecord, error: userError } = await supabase
         .from(TABLES.USERS)
         .insert({
-          id: userId,
+          id: userId, // CRITICAL: Use the user ID from Supabase Auth
           full_name: userData.fullName,
           email: userEmail,
           address: userData.address || null,
@@ -54,22 +50,22 @@ export class PharmacyAuthService {
         .select()
         .single();
       
-      if (userError) throw userError;
+      if (userError) {
+        throw userError;
+      }
 
-      // Step 3: Create role-specific record, using the same user ID
+      // Step 3: Create role-specific records (pharmacist/client) using the same user ID.
       if (userData.role === 'client') {
         const { error: clientError } = await supabase
           .from(TABLES.CLIENTS)
           .insert({
-            user_id: userRecord.id, // Use the ID from the user record
+            user_id: userRecord.id,
             is_premium: false
           });
-        
         if (clientError) throw clientError;
 
       } else if (userData.role === 'pharmacist') {
         let pharmacyId = null;
-        
         if (userData.pharmacyName) {
           const { data: pharmacyData, error: pharmacyError } = await supabase
             .from(TABLES.PHARMACIES)
@@ -86,18 +82,16 @@ export class PharmacyAuthService {
             .single();
           
           if (pharmacyError) throw pharmacyError;
-          
           pharmacyId = pharmacyData.pharmacy_id;
         }
 
         const { error: pharmacistError } = await supabase
           .from(TABLES.PHARMACISTS)
           .insert({
-            user_id: userRecord.id, // Use the ID from the user record
+            user_id: userRecord.id,
             license_number: userData.licenseNumber,
             pharmacy_id: pharmacyId
           });
-        
         if (pharmacistError) throw pharmacistError;
       }
 

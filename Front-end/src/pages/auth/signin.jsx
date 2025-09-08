@@ -1,3 +1,4 @@
+// signin.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
@@ -11,7 +12,6 @@ import {
   Info,
   Pill
 } from 'lucide-react';
-import '../CSS/auth.css';
 import { authAPI } from '../../api/apiClient.js';
 
 const SignIn = () => {
@@ -25,6 +25,16 @@ const SignIn = () => {
   
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    const user = localStorage.getItem('user');
+    console.log('Current auth state:', { 
+      hasToken: !!token, 
+      hasUser: !!user,
+      user: user ? JSON.parse(user) : null 
+    });
+  }, []);
 
   // Handle navigation state messages
   useEffect(() => {
@@ -46,13 +56,12 @@ const SignIn = () => {
   const getDashboardRoute = (userRole) => {
     switch (userRole?.toLowerCase()) {
       case 'admin':
-        return '/dashboards/Admin-dashboard';
+        return '/dashboards/admin';
       case 'pharmacist':
-        return '/dashboards/Pharmacy-dashboard';
+        return '/dashboards/pharmacist';
       case 'client':
-        return '/dashboards/Client-dashboard';
       default:
-        return '/dashboards/Client-dashboard';
+        return '/dashboards/client';
     }
   };
 
@@ -65,170 +74,129 @@ const SignIn = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-
+  
     if (!email.trim() || !password) {
       setError('Email address and password are required');
       setLoading(false);
       return;
     }
-
+  
     if (!validateEmail(email.trim())) {
       setError('Please enter a valid email address');
       setLoading(false);
       return;
     }
-
+  
     try {
+      console.log('Attempting to sign in...');
       const response = await authAPI.signin({
-        identifier: email.trim().toLowerCase(),
+        email: email.trim().toLowerCase(),
         password: password
       });
       
+      console.log('Sign in response:', response.data);
+  
       if (response.data.success) {
         // Store auth data in localStorage
         localStorage.setItem('authToken', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         
-        const userRole = response.data.user.role;
-        const dashboardRoute = getDashboardRoute(userRole);
-        
-        // Check if pharmacist account is approved
-        if (userRole === 'pharmacist' && response.data.user.roleData?.pharmacy?.status === 'pending') {
-          navigate(dashboardRoute, { 
-            replace: true,
-            state: { 
-              user: response.data.user,
-              message: 'Your pharmacy account is pending admin approval. Some features may be limited.',
-              type: 'info'
-            }
-          });
-        } else {
-          navigate(dashboardRoute, { 
-            replace: true,
-            state: { 
-              user: response.data.user,
-              message: `Welcome back, ${response.data.user.full_name}!`,
-              type: 'success'
-            }
-          });
-        }
+        // Navigate to appropriate dashboard
+        navigate(getDashboardRoute(response.data.user.role), {
+          state: { message: 'Welcome back!' }
+        });
+      } else {
+        setError(response.data.message || 'Invalid credentials');
       }
-
     } catch (err) {
       console.error('Sign in error:', err);
-      setError(err.error || 'Failed to sign in. Please check your credentials.');
+      setError(err.response?.data?.message || 'An error occurred during sign in');
     } finally {
       setLoading(false);
     }
   };
 
-  const getMessageIcon = () => {
-    switch (messageType) {
-      case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'error':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
-      case 'info':
-      default:
-        return <Info className="h-5 w-5 text-blue-500" />;
-    }
-  };
-
-  const getMessageClass = () => {
-    switch (messageType) {
-      case 'success':
-        return 'auth-success';
-      case 'error':
-        return 'auth-error';
-      case 'info':
-      default:
-        return 'auth-info';
-    }
-  };
-
   return (
-    <div className="auth-container">
-      <div className="auth-card">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-white px-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 relative overflow-hidden transform transition-all duration-300 hover:shadow-2xl">
         <button 
           onClick={() => navigate(-1)} 
-          className="back-button"
+          className="absolute top-6 left-6 text-gray-600 hover:text-green-600 transition-colors"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-6 w-6" />
         </button>
 
-        <div className="auth-header">
-          <div className="flex items-center justify-center mb-4">
-            <Pill className="h-8 w-8 text-green-600 mr-2" />
-            <h2 className="text-2xl font-bold text-gray-900">Swift Meds</h2>
+        <div className="text-center mb-10">
+          <div className="flex justify-center items-center mb-6">
+            <Pill className="h-10 w-10 text-green-600 mr-3" />
+            <h2 className="text-4xl font-bold text-gray-900">SwiftMeds</h2>
           </div>
-          <p className="text-gray-600">Welcome back! Sign in to your account</p>
+          <h3 className="text-2xl font-semibold text-gray-800 mb-2">Welcome Back</h3>
+          <p className="text-gray-600 text-lg">Please sign in to your account</p>
         </div>
 
-        {/* State messages from navigation */}
+        {/* State messages */}
         {stateMessage && (
-          <div className={getMessageClass()}>
-            {getMessageIcon()}
-            <span>{stateMessage}</span>
-            <button
-              onClick={() => setStateMessage('')}
-              className="ml-auto text-current opacity-70 hover:opacity-100"
-            >
-              ×
-            </button>
+          <div className={`flex items-center p-4 rounded-xl mb-6 animate-fade-in ${
+            messageType === 'success' ? 'bg-green-50 text-green-600' :
+            messageType === 'error' ? 'bg-red-50 text-red-600' :
+            'bg-blue-50 text-blue-600'
+          }`}>
+            {messageType === 'success' ? <CheckCircle className="h-5 w-5 mr-3" /> :
+             messageType === 'error' ? <AlertCircle className="h-5 w-5 mr-3" /> :
+             <Info className="h-5 w-5 mr-3" />}
+            <span className="text-sm">{stateMessage}</span>
           </div>
         )}
 
-        {/* Regular error messages */}
         {error && (
-          <div className="auth-error">
-            <AlertCircle className="h-5 w-5 text-red-500" />
-            <span>{error}</span>
+          <div className="flex items-center bg-red-50 text-red-600 p-4 rounded-xl mb-6 animate-fade-in">
+            <AlertCircle className="h-5 w-5 mr-3" />
+            <span className="text-sm">{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label className="form-label">Email Address</label>
-            <div className="input-group">
-              <Mail className="input-icon" />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email address"
                 required
-                className="form-input"
+                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 outline-none"
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Use the email address you registered with
-            </p>
+            <p className="text-xs text-gray-500 mt-1">Use the email address you registered with</p>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <div className="input-group">
-              <Lock className="input-icon" />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
-                className="form-input"
+                className="w-full pl-12 pr-12 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 outline-none"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="password-toggle"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
           </div>
 
-          <div className="form-footer">
-            <Link to="/auth/forgot-password" className="forgot-password">
+          <div className="flex justify-end">
+            <Link to="/auth/forgot-password" className="text-sm text-green-600 hover:text-green-700 font-medium underline-offset-2">
               Forgot password?
             </Link>
           </div>
@@ -236,32 +204,35 @@ const SignIn = () => {
           <button
             type="submit"
             disabled={loading}
-            className="auth-button"
+            className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-200 disabled:opacity-75 shadow-md hover:shadow-lg"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
 
-          <div className="auth-divider">
-            <span>OR</span>
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-3 bg-white text-gray-500">OR</span>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={() => navigate('/auth/signup')}
-            className="auth-secondary-button"
+            className="w-full bg-white text-green-600 py-3 rounded-lg font-medium border border-green-500 hover:bg-green-50 transition-all duration-200 shadow-md hover:shadow-lg"
           >
             Create an account
           </button>
-        </form>
 
-        <div className="text-center mt-4">
-          <p className="text-sm text-gray-600">
+          <div className="text-center mt-6 text-sm text-gray-600">
             Having trouble? Contact support at{' '}
-            <a href="mailto:support@swiftmeds.com" className="text-blue-600 hover:underline">
+            <a href="#" className="text-green-600 hover:text-green-700 font-medium underline-offset-2">
               support@swiftmeds.com
             </a>
-          </p>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   );
