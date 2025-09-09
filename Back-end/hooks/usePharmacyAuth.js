@@ -112,8 +112,6 @@ export const usePharmacyAuth = () => {
   };
 
   
-  const navigate = useNavigate();
-  
   const signOut = async () => {
     try {
       setError(null);
@@ -121,7 +119,6 @@ export const usePharmacyAuth = () => {
       if (error) throw error;
   
       clearAuthData();
-      navigate('/auth/signin');
       return true;
     } catch (error) {
       setError(error.message);

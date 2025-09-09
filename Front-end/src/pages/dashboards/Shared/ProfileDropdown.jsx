@@ -1,12 +1,15 @@
 import React from 'react';
 import * as icons from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 const ProfileDropdown = ({ show, onClose, user, profile, onQuickStats, signOut, admin }) => {
+  const navigate = useNavigate();
   if (!show) return null;
 
   const handleSignOut = () => {
     onClose();
     signOut();
+    navigate('/auth/signin');
   };
 
   return (

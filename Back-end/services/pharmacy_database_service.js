@@ -1,864 +1,3 @@
-/*import { supabase } from '../config/supabase.js';
-
-// Updated table names to match your schema
-const TABLES = {
-  USERS: 'users',
-  CLIENTS: 'clients', 
-  PHARMACISTS: 'pharmacists',
-  ADMINS: 'admins',
-  PHARMACIES: 'pharmacies',
-  MEDICATIONS: 'medications',
-  INVENTORY: 'inventory',
-  RESERVATIONS: 'reservations',
-  CATEGORIES: 'categories',
-  REVIEWS: 'reviews',
-  NOTIFICATIONS: 'notifications',
-  PAYMENTS: 'payments',
-  PREMIUM_SUBSCRIPTIONS: 'premium_subscriptions'
-};
-
-export class PharmacyDatabaseService {
-  // ==================== RESERVATIONS ====================
-  
-  static async getReservations(userId = null) {
-    try {
-      let query = supabase
-        .from(TABLES.RESERVATIONS)
-        .select(`
-          *,
-          pharmacy:pharmacy_id (
-            pharmacy_id,
-            name,
-            address,
-            phone
-          ),
-          client:client_id (
-            client_id,
-            user:user_id (
-              full_name
-            )
-          ),
-          medication:medication_id (
-            name,
-            generic_name,
-            price
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (userId) {
-        // First get client_id from user_id
-        const { data: clientData } = await supabase
-          .from(TABLES.CLIENTS)
-          .select('client_id')
-          .eq('user_id', userId)
-          .single();
-        
-        if (clientData) {
-          query = query.eq('client_id', clientData.client_id);
-        }
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      return data.map(reservation => ({
-        id: reservation.reservation_id,
-        patientName: reservation.patient_name,
-        medication: reservation.medication?.name || 'Unknown',
-        quantity: reservation.quantity,
-        pharmacy: reservation.pharmacy?.name || 'Unknown',
-        status: reservation.status,
-        totalAmount: reservation.total_amount,
-        createdAt: reservation.created_at,
-        expiresAt: reservation.expires_at,
-        pharmacyAddress: reservation.pharmacy?.address,
-        pharmacyPhone: reservation.pharmacy?.phone
-      }));
-    } catch (error) {
-      console.error('Error fetching reservations:', error);
-      throw error;
-    }
-  }
-
-  static async getPharmacyReservations(pharmacyId) {
-    try {
-      const { data, error } = await supabase
-        .from(TABLES.RESERVATIONS)
-        .select(`
-          *,
-          client:client_id (
-            user:user_id (
-              full_name
-            )
-          ),
-          medication:medication_id (
-            name,
-            generic_name,
-            price
-          )
-        `)
-        .eq('pharmacy_id', pharmacyId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      return data.map(reservation => ({
-        id: reservation.reservation_id,
-        patientName: reservation.client?.user?.full_name || 'Unknown',
-        medication: reservation.medication?.name || 'Unknown',
-        quantity: reservation.quantity,
-        status: reservation.status,
-        totalAmount: reservation.total_amount,
-        createdAt: reservation.created_at,
-        expiresAt: reservation.expires_at
-      }));
-    } catch (error) {
-      console.error('Error fetching pharmacy reservations:', error);
-      throw error;
-    }
-  }
-
-  static async getPharmacyStats(pharmacyId) {
-    try {
-      const { data: reservations, error } = await supabase
-        .from(TABLES.RESERVATIONS)
-        .select('status, created_at')
-        .eq('pharmacy_id', pharmacyId);
-
-      if (error) throw error;
-
-      const today = new Date().toISOString().split('T')[0];
-      const todaysReservations = reservations.filter(r => r.created_at && r.created_at.split('T')[0] === today);
-
-      return {
-        total: reservations.length,
-        confirmed: todaysReservations.filter(r => r.status === 'confirmed').length,
-        pending: reservations.filter(r => r.status === 'pending').length
-      };
-    } catch (error) {
-      console.error('Error fetching pharmacy stats:', error);
-      throw error;
-    }
-  }
-
-  static async getAdminStats() {
-    try {
-      const [users, pharmacies, reservations, pending] = await Promise.all([
-        supabase.from(TABLES.USERS).select('*', { count: 'exact', head: true }),
-        supabase.from(TABLES.PHARMACIES).select('*', { count: 'exact', head: true }),
-        supabase.from(TABLES.RESERVATIONS).select('*', { count: 'exact', head: true }),
-        supabase.from(TABLES.PHARMACIES).select('*', { count: 'exact', head: true }).eq('status', 'pending')
-      ]);
-
-      return {
-        totalUsers: users.count,
-        totalPharmacies: pharmacies.count,
-        totalReservations: reservations.count,
-        pendingApprovals: pending.count
-      };
-    } catch (error) {
-      console.error('Error fetching admin stats:', error);
-      throw error;
-    }
-  }
-
-  static async getAllUsers() {
-    try {
-      const { data, error } = await supabase.from(TABLES.USERS).select('*');
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error fetching all users:', error);
-      throw error;
-    }
-  }
-
-  static async getAllPharmacies() {
-    try {
-      const { data, error } = await supabase.from(TABLES.PHARMACIES).select('*');
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error fetching all pharmacies:', error);
-      throw error;
-    }
-  }
-
-  static async getAllReservations() {
-    return this.getReservations();
-  }
-
-  static async createReservation(reservationData, userId) {
-    try {
-      // Get client_id from user_id
-      const { data: clientData, error: clientError } = await supabase
-        .from(TABLES.CLIENTS)
-        .select('client_id')
-        .eq('user_id', userId)
-        .single();
-
-      if (clientError || !clientData) {
-        throw new Error('Client not found for this user');
-      }
-
-      const { data, error } = await supabase
-        .from(TABLES.RESERVATIONS)
-        .insert([{
-          client_id: clientData.client_id,
-          pharmacy_id: reservationData.pharmacyId,
-          medication_id: reservationData.medicationId,
-          patient_name: reservationData.patientName,
-          quantity: parseInt(reservationData.quantity),
-          status: reservationData.status || 'pending',
-          total_amount: reservationData.totalAmount,
-          expires_at: reservationData.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
-        }])
-        .select();
-
-      if (error) throw error;
-      return data[0];
-    } catch (error) {
-      console.error('Error creating reservation:', error);
-      throw error;
-    }
-  }
-
-  static async updateReservation(reservationId, updates) {
-    try {
-      const updateData = {};
-
-      if (updates.patientName) updateData.patient_name = updates.patientName;
-      if (updates.quantity) updateData.quantity = parseInt(updates.quantity);
-      if (updates.status) updateData.status = updates.status;
-      if (updates.totalAmount) updateData.total_amount = updates.totalAmount;
-
-      const { data, error } = await supabase
-        .from(TABLES.RESERVATIONS)
-        .update(updateData)
-        .eq('reservation_id', reservationId)
-        .select();
-
-      if (error) throw error;
-      return data[0];
-    } catch (error) {
-      console.error('Error updating reservation:', error);
-      throw error;
-    }
-  }
-
-  static async deleteReservation(reservationId) {
-    try {
-      const { error } = await supabase
-        .from(TABLES.RESERVATIONS)
-        .delete()
-        .eq('reservation_id', reservationId);
-
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Error deleting reservation:', error);
-      throw error;
-    }
-  }
-
-  // ==================== PHARMACIES ====================
-  
-  static async getPharmacies(approvedOnly = true) {
-    try {
-      let query = supabase
-        .from(TABLES.PHARMACIES)
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (approvedOnly) {
-        query = query.eq('is_approved', true);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      return data.map(pharmacy => ({
-        id: pharmacy.pharmacy_id,
-        name: pharmacy.name,
-        address: pharmacy.address,
-        phone: pharmacy.phone,
-        status: pharmacy.status,
-        rating: pharmacy.average_rating,
-        coordinates: pharmacy.latitude && pharmacy.longitude ? 
-          { lat: pharmacy.latitude, lng: pharmacy.longitude } : null
-      }));
-    } catch (error) {
-      console.error('Error fetching pharmacies:', error);
-      throw error;
-    }
-  }
-
-  // ==================== INVENTORY ====================
-
-  static async getInventory(pharmacyId) {
-    try {
-      const { data, error } = await supabase
-        .from(TABLES.INVENTORY)
-        .select(`
-          *,
-          medication:medication_id (
-            name,
-            generic_name,
-            price,
-            category:category_id (
-              name
-            )
-          )
-        `)
-        .eq('pharmacy_id', pharmacyId)
-        .order('quantity', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error fetching inventory:', error);
-      throw error;
-    }
-  }
-
-  static async updateInventory(pharmacyId, medicationId, quantity) {
-    try {
-      const { data, error } = await supabase
-        .from(TABLES.INVENTORY)
-        .upsert({
-          pharmacy_id: pharmacyId,
-          medication_id: medicationId,
-          quantity: quantity,
-          last_updated: new Date().toISOString()
-        }, {
-          onConflict: 'pharmacy_id,medication_id'
-        })
-        .select();
-
-      if (error) throw error;
-      return data[0];
-    } catch (error) {
-      console.error('Error updating inventory:', error);
-      throw error;
-    }
-  }
-
-  // ==================== SEARCH FUNCTIONALITY ====================
-  
-  static async searchMedicationsAndPharmacies(searchTerm, filters = {}) {
-    try {
-      const promises = [];
-
-      // Search medications using the view
-      let medicationQuery = supabase
-        .from('medication_search_view')
-        .select('*')
-        .or(`name.ilike.%${searchTerm}%,generic_name.ilike.%${searchTerm}%`);
-
-      if (filters.category) {
-        medicationQuery = medicationQuery.eq('category', filters.category);
-      }
-
-      promises.push(medicationQuery);
-
-      // Search pharmacies
-      let pharmacyQuery = supabase
-        .from(TABLES.PHARMACIES)
-        .select('*')
-        .or(`name.ilike.%${searchTerm}%,address.ilike.%${searchTerm}%`)
-        .eq('is_approved', true);
-
-      if (filters.status) {
-        pharmacyQuery = pharmacyQuery.eq('status', filters.status);
-      }
-
-      promises.push(pharmacyQuery);
-
-      const [medicationsResult, pharmaciesResult] = await Promise.all(promises);
-
-      if (medicationsResult.error) throw medicationsResult.error;
-      if (pharmaciesResult.error) throw pharmaciesResult.error;
-
-      return {
-        medications: medicationsResult.data || [],
-        pharmacies: pharmaciesResult.data || []
-      };
-    } catch (error) {
-      console.error('Error searching medications and pharmacies:', error);
-      throw error;
-    }
-  }
-
-  // ==================== ENHANCED SEARCH WITH COORDINATES ====================
-  
-  static async searchMedicationsAndPharmacies(searchTerm, filters = {}) {
-    try {
-      const promises = [];
-
-      // Enhanced medication search with pharmacy coordinates
-      let medicationQuery = supabase
-        .from('medication_search_view')
-        .select(`
-          *,
-          pharmacy:pharmacy_id (
-            pharmacy_id,
-            name,
-            address,
-            phone,
-            latitude,
-            longitude,
-            status,
-            average_rating
-          )
-        `)
-        .or(`name.ilike.%${searchTerm}%,generic_name.ilike.%${searchTerm}%`);
-
-      if (filters.category) {
-        medicationQuery = medicationQuery.eq('category', filters.category);
-      }
-
-      promises.push(medicationQuery);
-
-      // Enhanced pharmacy search with coordinates
-      let pharmacyQuery = supabase
-        .from(TABLES.PHARMACIES)
-        .select('*')
-        .or(`name.ilike.%${searchTerm}%,address.ilike.%${searchTerm}%`)
-        .eq('is_approved', true);
-
-      if (filters.status) {
-        pharmacyQuery = pharmacyQuery.eq('status', filters.status);
-      }
-
-      promises.push(pharmacyQuery);
-
-      const [medicationsResult, pharmaciesResult] = await Promise.all(promises);
-
-      if (medicationsResult.error) throw medicationsResult.error;
-      if (pharmaciesResult.error) throw pharmaciesResult.error;
-
-      // Transform medication data to include coordinates
-      const medicationsWithCoords = (medicationsResult.data || []).map(med => ({
-        ...med,
-        pharmacy: med.pharmacy?.name || 'Unknown',
-        pharmacy_id: med.pharmacy?.pharmacy_id,
-        pharmacy_address: med.pharmacy?.address,
-        pharmacy_phone: med.pharmacy?.phone,
-        coordinates: med.pharmacy?.latitude && med.pharmacy?.longitude ? {
-          lat: parseFloat(med.pharmacy.latitude),
-          lng: parseFloat(med.pharmacy.longitude)
-        } : null
-      }));
-
-      // Transform pharmacy data to include coordinates
-      const pharmaciesWithCoords = (pharmaciesResult.data || []).map(pharmacy => ({
-        ...pharmacy,
-        coordinates: pharmacy.latitude && pharmacy.longitude ? {
-          lat: parseFloat(pharmacy.latitude),
-          lng: parseFloat(pharmacy.longitude)
-        } : null
-      }));
-
-      return {
-        medications: medicationsWithCoords,
-        pharmacies: pharmaciesWithCoords
-      };
-    } catch (error) {
-      console.error('Error searching medications and pharmacies:', error);
-      throw error;
-    }
-  }
-
-  // ==================== PHARMACY LOCATION SERVICES ====================
-
-  static async getPharmaciesWithCoordinates(approvedOnly = true) {
-    try {
-      let query = supabase
-        .from(TABLES.PHARMACIES)
-        .select('*')
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
-        .order('name', { ascending: true });
-
-      if (approvedOnly) {
-        query = query.eq('is_approved', true);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      return data.map(pharmacy => ({
-        id: pharmacy.pharmacy_id,
-        name: pharmacy.name,
-        address: pharmacy.address,
-        phone: pharmacy.phone,
-        status: pharmacy.status,
-        rating: pharmacy.average_rating,
-        operatingHours: pharmacy.operating_hours,
-        coordinates: {
-          lat: parseFloat(pharmacy.latitude),
-          lng: parseFloat(pharmacy.longitude)
-        }
-      }));
-    } catch (error) {
-      console.error('Error fetching pharmacies with coordinates:', error);
-      throw error;
-    }
-  }
-
-  static async getPharmaciesNearLocation(latitude, longitude, radiusKm = 10) {
-    try {
-      // Using PostGIS ST_DWithin function for geographic proximity
-      // Note: This requires PostGIS extension and proper geographic columns
-      const { data, error } = await supabase.rpc('get_nearby_pharmacies', {
-        user_lat: latitude,
-        user_lng: longitude,
-        radius_km: radiusKm
-      });
-
-      if (error) {
-        // Fallback to client-side distance calculation if RPC not available
-        console.warn('RPC not available, using fallback method');
-        return this.getPharmaciesWithCoordinatesFallback(latitude, longitude, radiusKm);
-      }
-
-      return data.map(pharmacy => ({
-        id: pharmacy.pharmacy_id,
-        name: pharmacy.name,
-        address: pharmacy.address,
-        phone: pharmacy.phone,
-        status: pharmacy.status,
-        rating: pharmacy.average_rating,
-        coordinates: {
-          lat: parseFloat(pharmacy.latitude),
-          lng: parseFloat(pharmacy.longitude)
-        },
-        distance: pharmacy.distance_km
-      }));
-    } catch (error) {
-      console.error('Error fetching nearby pharmacies:', error);
-      // Fallback method
-      return this.getPharmaciesWithCoordinatesFallback(latitude, longitude, radiusKm);
-    }
-  }
-
-  // Fallback method for distance calculation
-  static async getPharmaciesWithCoordinatesFallback(userLat, userLng, radiusKm) {
-    try {
-      const pharmacies = await this.getPharmaciesWithCoordinates();
-      
-      return pharmacies
-        .map(pharmacy => ({
-          ...pharmacy,
-          distance: this.calculateDistance(
-            { lat: userLat, lng: userLng },
-            pharmacy.coordinates
-          )
-        }))
-        .filter(pharmacy => pharmacy.distance <= radiusKm)
-        .sort((a, b) => a.distance - b.distance);
-    } catch (error) {
-      console.error('Error in fallback pharmacy search:', error);
-      throw error;
-    }
-  }
-
-  // ==================== MEDICATION AVAILABILITY BY LOCATION ====================
-
-  static async findMedicationNearLocation(medicationName, latitude, longitude, radiusKm = 20) {
-    try {
-      const { data, error } = await supabase
-        .from('medication_availability_view')
-        .select(`
-          *,
-          pharmacy:pharmacy_id (
-            pharmacy_id,
-            name,
-            address,
-            phone,
-            latitude,
-            longitude,
-            status,
-            average_rating
-          )
-        `)
-        .ilike('medication_name', `%${medicationName}%`)
-        .not('pharmacy.latitude', 'is', null)
-        .not('pharmacy.longitude', 'is', null);
-
-      if (error) throw error;
-
-      // Calculate distances and filter by radius
-      const medicationsWithDistance = data
-        .map(item => {
-          const distance = this.calculateDistance(
-            { lat: latitude, lng: longitude },
-            { 
-              lat: parseFloat(item.pharmacy.latitude), 
-              lng: parseFloat(item.pharmacy.longitude) 
-            }
-          );
-
-          return {
-            ...item,
-            distance,
-            coordinates: {
-              lat: parseFloat(item.pharmacy.latitude),
-              lng: parseFloat(item.pharmacy.longitude)
-            }
-          };
-        })
-        .filter(item => item.distance <= radiusKm)
-        .sort((a, b) => a.distance - b.distance);
-
-      return medicationsWithDistance;
-    } catch (error) {
-      console.error('Error finding medication near location:', error);
-      throw error;
-    }
-  }
-
-  // ==================== UTILITY METHODS ====================
-
-  static calculateDistance(coord1, coord2) {
-    const R = 6371; // Radius of Earth in kilometers
-    const dLat = (coord2.lat - coord1.lat) * Math.PI / 180;
-    const dLon = (coord2.lng - coord1.lng) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(coord1.lat * Math.PI / 180) * Math.cos(coord2.lat * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  }
-
-  static async geocodeAddress(address) {
-    try {
-      // This would typically use a geocoding service like Google Maps Geocoding API
-      // For now, return null and handle manually
-      console.warn('Geocoding not implemented, please add coordinates manually');
-      return null;
-    } catch (error) {
-      console.error('Error geocoding address:', error);
-      return null;
-    }
-  }
-
-  // ==================== PHARMACY UPDATES ====================
-
-  static async updatePharmacyCoordinates(pharmacyId, latitude, longitude) {
-    try {
-      const { data, error } = await supabase
-        .from(TABLES.PHARMACIES)
-        .update({
-          latitude: latitude,
-          longitude: longitude,
-          updated_at: new Date().toISOString()
-        })
-        .eq('pharmacy_id', pharmacyId)
-        .select();
-
-      if (error) throw error;
-      return data[0];
-    } catch (error) {
-      console.error('Error updating pharmacy coordinates:', error);
-      throw error;
-    }
-  }
-
-  // ==================== ENHANCED RESERVATIONS WITH LOCATION ====================
-
-  static async createReservationWithDistance(reservationData, userId, userLocation = null) {
-    try {
-      // Get client_id from user_id
-      const { data: clientData, error: clientError } = await supabase
-        .from(TABLES.CLIENTS)
-        .select('client_id')
-        .eq('user_id', userId)
-        .single();
-
-      if (clientError || !clientData) {
-        throw new Error('Client not found for this user');
-      }
-
-      // Calculate distance to pharmacy if user location is provided
-      let distanceToPharmacy = null;
-      if (userLocation && reservationData.pharmacyId) {
-        const { data: pharmacyData } = await supabase
-          .from(TABLES.PHARMACIES)
-          .select('latitude, longitude')
-          .eq('pharmacy_id', reservationData.pharmacyId)
-          .single();
-
-        if (pharmacyData && pharmacyData.latitude && pharmacyData.longitude) {
-          distanceToPharmacy = this.calculateDistance(
-            userLocation,
-            { 
-              lat: parseFloat(pharmacyData.latitude), 
-              lng: parseFloat(pharmacyData.longitude) 
-            }
-          );
-        }
-      }
-
-      const { data, error } = await supabase
-        .from(TABLES.RESERVATIONS)
-        .insert([{
-          client_id: clientData.client_id,
-          pharmacy_id: reservationData.pharmacyId,
-          medication_id: reservationData.medicationId,
-          patient_name: reservationData.patientName,
-          quantity: parseInt(reservationData.quantity),
-          status: reservationData.status || 'pending',
-          total_amount: reservationData.totalAmount,
-          distance_km: distanceToPharmacy,
-          expires_at: reservationData.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-        }])
-        .select();
-
-      if (error) throw error;
-      return data[0];
-    } catch (error) {
-      console.error('Error creating reservation with distance:', error);
-      throw error;
-    }
-  }
-
-  // ==================== ANALYTICS & STATS ====================
-  
-  static async getReservationStats(userId = null) {
-    try {
-      let query = supabase
-        .from('reservation_details_view') // Using the view
-        .select('status, created_at');
-
-      if (userId) {
-        query = query.eq('client_name', userId); // This might need adjustment based on how you want to filter
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const today = new Date().toISOString().split('T')[0];
-      
-      return {
-        total: data.length,
-        confirmed: data.filter(r => r.status === 'confirmed').length,
-        pending: data.filter(r => r.status === 'pending').length,
-        cancelled: data.filter(r => r.status === 'cancelled').length,
-        fulfilled: data.filter(r => r.status === 'fulfilled').length,
-        today: data.filter(r => r.created_at.split('T')[0] === today).length
-      };
-    } catch (error) {
-      console.error('Error fetching reservation stats:', error);
-      throw error;
-    }
-  }
-
-  // ==================== CATEGORIES ====================
-  
-  static async getCategories() {
-    try {
-      const { data, error } = await supabase
-        .from(TABLES.CATEGORIES)
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      throw error;
-    }
-  }
-
-  // ==================== REVIEWS ====================
-  
-  static async getPharmacyReviews(pharmacyId) {
-    try {
-      const { data, error } = await supabase
-        .from(TABLES.REVIEWS)
-        .select(`
-          *,
-          client:client_id (
-            user:user_id (
-              full_name
-            )
-          )
-        `)
-        .eq('pharmacy_id', pharmacyId)
-        .order('date', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error fetching reviews:', error);
-      throw error;
-    }
-  }
-
-  static async createReview(userId, pharmacyId, rating, comment) {
-    try {
-      // Get client_id from user_id
-      const { data: clientData, error: clientError } = await supabase
-        .from(TABLES.CLIENTS)
-        .select('client_id')
-        .eq('user_id', userId)
-        .single();
-
-      if (clientError || !clientData) {
-        throw new Error('Client not found for this user');
-      }
-
-      const { data, error } = await supabase
-        .from(TABLES.REVIEWS)
-        .insert({
-          client_id: clientData.client_id,
-          pharmacy_id: pharmacyId,
-          rating: rating,
-          comment: comment
-        })
-        .select();
-
-      if (error) throw error;
-      return data[0];
-    } catch (error) {
-      console.error('Error creating review:', error);
-      throw error;
-    }
-  }
-
-  static async approvePharmacy(pharmacyId) {
-    try {
-      const { error } = await supabase
-        .from(TABLES.PHARMACIES)
-        .update({ is_approved: true, status: 'approved' })
-        .eq('pharmacy_id', pharmacyId);
-
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Error approving pharmacy:', error);
-      throw error;
-    }
-  }
-
-  static async deleteUser(userId) {
-    try {
-      const { error } = await supabase
-        .from(TABLES.USERS)
-        .delete()
-        .eq('id', userId);
-
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      throw error;
-    }
-  }
-}*/
 import { supabase } from '../config/supabase.js';
 
 // Updated table names to match your schema
@@ -1702,6 +841,206 @@ export class PharmacyDatabaseService {
       throw error;
     }
   }
+
+// ==================== REVIEWS ====================
+
+  static async createReview(userId, pharmacyId, rating, comment = '') {
+    try {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+
+      // Get client_id or create client record
+      let clientData = await supabase
+        .from(TABLES.CLIENTS)
+        .select('client_id')
+        .eq('user_id', userId)
+        .single();
+
+      if (!clientData?.data) {
+        const user = await this.getUserById(userId);
+        if (!user) throw new Error('User not found');
+        const clientId = await this.createClient(userId, user.full_name || 'Anonymous');
+        clientData = { data: { client_id: clientId } };
+      }
+
+      const clientId = clientData.data.client_id;
+
+      // Check if review already exists
+      const { data: existingReview, error: existingError } = await supabase
+        .from(TABLES.REVIEWS)
+        .select('review_id')
+        .eq('client_id', clientId)
+        .eq('pharmacy_id', pharmacyId)
+        .single();
+
+      if (existingError && existingError.code !== 'PGRST116') {
+        throw existingError;
+      }
+
+      let reviewData;
+      if (existingReview) {
+        // Update existing review
+        const { data, error } = await supabase
+          .from(TABLES.REVIEWS)
+          .update({
+            rating,
+            comment,
+            date: new Date().toISOString()
+          })
+          .eq('review_id', existingReview.review_id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        reviewData = data;
+      } else {
+        // Create new review
+        const { data, error } = await supabase
+          .from(TABLES.REVIEWS)
+          .insert([{
+            client_id: clientId,
+            pharmacy_id: pharmacyId,
+            rating,
+            comment,
+            date: new Date().toISOString()
+          }])
+          .select()
+          .single();
+
+        if (error) throw error;
+        reviewData = data;
+      }
+
+      return reviewData;
+    } catch (error) {
+      console.error('Error creating/updating review:', error);
+      throw error;
+    }
+  }
+
+  static async getReviewsForPharmacy(pharmacyId) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.REVIEWS)
+        .select(`
+          *,
+          client:client_id (
+            user:user_id (
+              full_name
+            )
+          )
+        `)
+        .eq('pharmacy_id', pharmacyId)
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+
+      return data.map(review => ({
+        id: review.review_id,
+        rating: review.rating,
+        comment: review.comment,
+        date: review.date,
+        clientName: review.client?.user?.full_name || 'Anonymous'
+      }));
+    } catch (error) {
+      console.error('Error fetching reviews for pharmacy:', error);
+      throw error;
+    }
+  }
+
+  static async deleteReview(reviewId) {
+    try {
+      const { error } = await supabase
+        .from(TABLES.REVIEWS)
+        .delete()
+        .eq('review_id', reviewId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      throw error;
+    }
+  }
+
+  static async getPharmacyAdmins(pharmacyId) {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.PHARMACISTS)
+        .select('user_id')
+        .eq('pharmacy_id', pharmacyId);
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching pharmacy admins:', error);
+      throw error;
+    }
+  }
+
+  // ==================== NOTIFICATIONS ====================
+
+  static async getNotifications(userId) {
+    try {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from(TABLES.NOTIFICATIONS)
+        .select('*')
+        .eq('user_id', userId)
+        .order('sent_at', { ascending: false });
+
+      if (error) throw error;
+      return data.map(notif => ({
+        id: notif.notification_id,
+        message: `${notif.title}: ${notif.message}`,
+        time: notif.sent_at,
+        read: notif.is_read,
+        type: notif.notification_type
+      }));
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      throw error;
+    }
+  }
+
+  static async markNotificationAsRead(notificationId) {
+    try {
+      const { error } = await supabase
+        .from(TABLES.NOTIFICATIONS)
+        .update({ is_read: true })
+        .eq('notification_id', notificationId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  }
+
+  static async sendNotification(userId, title, message, type = 'general') {
+    try {
+      const { data, error } = await supabase
+        .from(TABLES.NOTIFICATIONS)
+        .insert([{
+          user_id: userId,
+          title: title,
+          message: message,
+          notification_type: type,
+          is_read: false
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      throw error;
+    }
+  }
+
 
   // ==================== OTHER METHODS ====================
 

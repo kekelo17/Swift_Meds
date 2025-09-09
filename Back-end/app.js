@@ -52,6 +52,7 @@ const TABLES = {
   MEDICATIONS: 'medications',
   INVENTORY: 'inventory',
   RESERVATIONS: 'reservations'
+
 };
 
 // Middleware for authentication
@@ -317,7 +318,7 @@ app.post('/api/auth/signin', async (req, res) => {
         userId: userData.user_id, 
         role: userData.role 
       },
-      process.env.JWT_SECRET || 'your-secret-key',
+      process.env.JWT_SECRET || 'secret-key',
       { expiresIn: '24h' }
     );
 

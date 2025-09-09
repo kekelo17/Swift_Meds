@@ -226,8 +226,8 @@ const AdminDashboard = () => {
             </div>
             
             <div className="space-y-2 text-sm text-gray-600 mb-4">
-              <p>License: {pharmacy.licenseNumber}</p>
-              <p>Hours: {pharmacy.operatingHours}</p>
+              <p>License: {pharmacy.license_number}</p>
+              <p>Hours: {pharmacy.operating_hours}</p>
             </div>
 
             {pharmacy.status === 'pending' && (
